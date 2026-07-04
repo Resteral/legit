@@ -239,3 +239,27 @@ CREATE POLICY "Users can update driver applications for their sites" ON public.d
 );
 
 CREATE POLICY "Anyone can insert driver applications" ON public.driver_applications FOR INSERT WITH CHECK (true);
+
+-- PHASE 11: DEBATE ARENA (OMEGLE-STYLE)
+CREATE TABLE IF NOT EXISTS public.debate_rooms (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  topic TEXT NOT NULL,
+  status TEXT DEFAULT 'active', -- active, finished
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.debate_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  room_id UUID REFERENCES public.debate_rooms(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL, -- 'User1', 'User2', or 'System'
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.debate_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.debate_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can access debate rooms" ON public.debate_rooms FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert debate rooms" ON public.debate_rooms FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can access debate messages" ON public.debate_messages FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert debate messages" ON public.debate_messages FOR INSERT WITH CHECK (true);

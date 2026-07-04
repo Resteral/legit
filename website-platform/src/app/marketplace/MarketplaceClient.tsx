@@ -76,12 +76,20 @@ export default function MarketplaceClient({
           </h1>
           <p className="text-gray-400">Find products in stock at local stores right next to you.</p>
         </div>
-        <Link 
-          href="/drivers/signup" 
-          className="inline-flex items-center justify-center bg-primary/20 text-primary border border-primary/30 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary hover:text-white transition-all shrink-0"
-        >
-          Become a Driver
-        </Link>
+        <div className="flex gap-3 shrink-0">
+          <Link 
+            href="/marketplace/debate" 
+            className="inline-flex items-center justify-center bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#6366f1] hover:text-white transition-all"
+          >
+            Debate Arena
+          </Link>
+          <Link 
+            href="/drivers/signup" 
+            className="inline-flex items-center justify-center bg-primary/20 text-primary border border-primary/30 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary hover:text-white transition-all"
+          >
+            Become a Driver
+          </Link>
+        </div>
       </div>
 
       {/* Search Bar Panel */}
