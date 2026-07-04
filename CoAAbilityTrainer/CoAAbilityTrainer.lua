@@ -173,6 +173,9 @@ SlashCmdList["COAAT"] = function(msg)
             DEFAULT_CHAT_FRAME:AddMessage("|cffaaaaaa  Classes: felsworn, necromancer, witch_hunter, tinker, runemaster, chronomancer, spiritwalker")
         end
 
+    elseif msg == "aoe" or msg == "mode" then
+        CoAAT_Engine.ToggleAoEMode()
+
     elseif msg == "reset" then
         CoAAT_Engine._state.resource = 0
         DEFAULT_CHAT_FRAME:AddMessage("|cffb048b5[CoAT]|r Resource reset to 0.")
@@ -181,6 +184,7 @@ SlashCmdList["COAAT"] = function(msg)
         DEFAULT_CHAT_FRAME:AddMessage("|cffb048b5[CoAT]|r |cffFFD700Commands:|r")
         DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaat|r              — Open settings")
         DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaat hud|r          — Toggle HUD")
+        DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaat aoe|r          — Toggle AoE/Single Target mode")
         DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaat class <id>|r   — Set active class")
         DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaattut|r           — Show tutorial")
         DEFAULT_CHAT_FRAME:AddMessage("  |cff00ccff/coaat help|r         — This message")

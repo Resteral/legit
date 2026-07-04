@@ -11,6 +11,7 @@ local state = {
     classId      = nil,   -- e.g. "felsworn"
     specId       = nil,   -- e.g. "infernal_assault"
     inCombat     = false,
+    aoeMode      = false,  -- false = Single Target, true = AoE
     resource     = 0,
     resourceMax  = 100,
     targetExists = false,
@@ -287,40 +288,50 @@ function CoAAT_Engine.EvaluateRotation()
     local seen = {}
 
     for _, rule in ipairs(rules) do
-        local matched = false
-
-        if rule.condition == "always" then
-            matched = true
-        elseif rule.condition == "buff_missing" then
-            matched = not CoAAT_Engine.HasBuff(rule.buffName)
-        elseif rule.condition == "debuff_missing" then
-            matched = not CoAAT_Engine.HasDebuff(rule.debuffName)
-        elseif rule.condition == "debuff_expiring" then
-            matched = CoAAT_Engine.HasDebuff(rule.debuffName) and
-                      CoAAT_Engine.GetDebuffRemaining(rule.debuffName) <= 2.5
-        elseif rule.condition == "cd_ready" then
-            matched = CoAAT_Engine.IsReady(rule.abilityId)
-        elseif rule.condition == "proc_active" then
-            matched = CoAAT_Engine.HasProc(rule.procName)
-        elseif rule.condition == "resource_gte" then
-            matched = res >= rule.threshold
-        elseif rule.condition == "pet_dead" then
-            matched = not CoAAT_Engine.IsPetAlive()
-        elseif rule.condition == "health_lt" then
-            matched = CoAAT_Engine.GetPlayerHP() < rule.threshold
+        -- Filter based on AoE / Single Target mode if specified
+        local skipRule = false
+        if rule.mode == "aoe" and not state.aoeMode then
+            skipRule = true
+        elseif rule.mode == "single" and state.aoeMode then
+            skipRule = true
         end
 
-        if matched then
-            local aId = rule.abilityId
-            if not seen[aId] then
-                seen[aId] = true
-                table.insert(matches, {
-                    abilityId = aId,
-                    urgency = rule.urgency,
-                    abilityDef = state.abilities[aId]
-                })
-                if #matches >= 3 then
-                    break
+        if not skipRule then
+            local matched = false
+
+            if rule.condition == "always" then
+                matched = true
+            elseif rule.condition == "buff_missing" then
+                matched = not CoAAT_Engine.HasBuff(rule.buffName)
+            elseif rule.condition == "debuff_missing" then
+                matched = not CoAAT_Engine.HasDebuff(rule.debuffName)
+            elseif rule.condition == "debuff_expiring" then
+                matched = CoAAT_Engine.HasDebuff(rule.debuffName) and
+                          CoAAT_Engine.GetDebuffRemaining(rule.debuffName) <= 2.5
+            elseif rule.condition == "cd_ready" then
+                matched = CoAAT_Engine.IsReady(rule.abilityId)
+            elseif rule.condition == "proc_active" then
+                matched = CoAAT_Engine.HasProc(rule.procName)
+            elseif rule.condition == "resource_gte" then
+                matched = res >= rule.threshold
+            elseif rule.condition == "pet_dead" then
+                matched = not CoAAT_Engine.IsPetAlive()
+            elseif rule.condition == "health_lt" then
+                matched = CoAAT_Engine.GetPlayerHP() < rule.threshold
+            end
+
+            if matched then
+                local aId = rule.abilityId
+                if not seen[aId] then
+                    seen[aId] = true
+                    table.insert(matches, {
+                        abilityId = aId,
+                        urgency = rule.urgency,
+                        abilityDef = state.abilities[aId]
+                    })
+                    if #matches >= 3 then
+                        break
+                    end
                 end
             end
         end
@@ -460,4 +471,19 @@ function CoAAT_Engine.GetSpecDef()
         if c and c.specs then return c.specs[state.specId] end
     end
     return nil
+end
+
+-- ─────────────────────────────────────────────
+-- AoE Mode management
+-- ─────────────────────────────────────────────
+function CoAAT_Engine.ToggleAoEMode()
+    state.aoeMode = not state.aoeMode
+    if CoAAT_RotationHelper.OnAoEToggled then
+        CoAAT_RotationHelper.OnAoEToggled(state.aoeMode)
+    end
+    print("|cff00ccff[CoAAT] Combat Mode set to: " .. (state.aoeMode and "|cff00ffff[AOE]|r" or "|cff22ff22[Single Target]|r"))
+end
+
+function CoAAT_Engine.GetAoEMode()
+    return state.aoeMode
 end

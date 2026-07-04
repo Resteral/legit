@@ -1,5 +1,5 @@
 -- ============================================================
--- CoAAbilityTrainer - Rotation Helper (Full UI Overhaul with Keybinds)
+-- CoAAbilityTrainer - Rotation Helper (Full UI Overhaul with Keybinds, GCD & Range)
 -- Centralized WeakAura style HUD showing exact rotational priority
 -- ============================================================
 
@@ -69,12 +69,10 @@ function CoAAT_RotationHelper.UpdateKeybindCache()
                 if actionType == "spell" then
                     spellName = GetSpellInfo(id)
                 elseif actionType == "macro" then
-                    -- Support macros that cast spells
                     spellName = GetMacroSpell(id)
                 end
                 
                 if spellName then
-                    -- Get raw keybind
                     local bindingName = config.bind .. i
                     local key = GetBindingKey(bindingName)
                     if key then
@@ -118,6 +116,12 @@ function CoAAT_RotationHelper.Build(parent)
         keyText:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
         keyText:SetTextColor(1, 1, 1, 0.95)
 
+        -- Cooldown frame overlay (GCD / cooldown sweep)
+        local cdFrame = CreateFrame("Cooldown", nil, parentFrame, "CooldownFrameTemplate")
+        cdFrame:SetSize(size, size)
+        cdFrame:SetPoint("CENTER", border, "CENTER")
+        cdFrame:Hide()
+
         -- Gloss/Highlight overlay
         local gloss = parentFrame:CreateTexture(nil, "OVERLAY")
         gloss:SetSize(size, size)
@@ -126,11 +130,11 @@ function CoAAT_RotationHelper.Build(parent)
         gloss:SetBlendMode("ADD")
         gloss:SetAlpha(0.4)
 
-        return tex, border, keyText
+        return tex, border, keyText, cdFrame
     end
 
     -- Primary Icon (Center-Left, MASSIVE)
-    f._icon1, f._border1, f._key1 = createIconSlot(f, 72, 0.0, 1.0, 0.0)
+    f._icon1, f._border1, f._key1, f._cd1 = createIconSlot(f, 72, 0.0, 1.0, 0.0)
     f._border1:SetPoint("CENTER", f, "CENTER", -50, 10)
 
     -- Pulsing glow ring around primary icon
@@ -143,12 +147,19 @@ function CoAAT_RotationHelper.Build(parent)
     f._glowRing = glowRing
 
     -- Secondary Icon (Center-Right, Medium)
-    f._icon2, f._border2, f._key2 = createIconSlot(f, 48, 1.0, 0.5, 0.0)
+    f._icon2, f._border2, f._key2, f._cd2 = createIconSlot(f, 48, 1.0, 0.5, 0.0)
     f._border2:SetPoint("LEFT", f._border1, "RIGHT", 15, -12)
 
     -- Tertiary Icon (Far Right, Small)
-    f._icon3, f._border3, f._key3 = createIconSlot(f, 36, 1.0, 0.0, 0.0)
+    f._icon3, f._border3, f._key3, f._cd3 = createIconSlot(f, 36, 1.0, 0.0, 0.0)
     f._border3:SetPoint("LEFT", f._border2, "RIGHT", 10, -6)
+
+    -- AoE Mode Badge
+    local aoeBadge = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    aoeBadge:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -5)
+    aoeBadge:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    aoeBadge:SetText("|cff22ff22[SINGLE TARGET]|r")
+    f._aoeBadge = aoeBadge
 
     -- Ability name (large, prominent under primary)
     local abilityName = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -261,9 +272,21 @@ function CoAAT_RotationHelper.SetNextAbilities(m1, m2, m3)
         f._hintText:SetText("|cffffd700" .. (m1.abilityDef.hint or m1.abilityDef.description or "Use immediately!") .. "|r")
         table.insert(spellsToGlow, { spellName = m1.abilityDef.name, r = 0.0, g = 1.0, b = 0.0 })
         
+        -- Store name for range check
+        f._spellName1 = m1.abilityDef.name
+        
         -- Keybind Lookup
         local bind = spellKeybinds[m1.abilityDef.name:lower()] or ""
         f._key1:SetText(bind)
+
+        -- Cooldown / GCD Sweep
+        local start, duration = GetSpellCooldown(m1.abilityDef.name)
+        if start and duration and duration > 0 then
+            f._cd1:SetCooldown(start, duration)
+            f._cd1:Show()
+        else
+            f._cd1:Hide()
+        end
         
         _current = m1.abilityId
         _urgency = m1.urgency
@@ -272,6 +295,8 @@ function CoAAT_RotationHelper.SetNextAbilities(m1, m2, m3)
         f._abilityName:SetText("|cffaaaaaa—|r")
         f._hintText:SetText("|cffaaaaaa Waiting for combat...|r")
         f._key1:SetText("")
+        f._cd1:Hide()
+        f._spellName1 = nil
         _current = nil
         _urgency = nil
     end
@@ -280,24 +305,46 @@ function CoAAT_RotationHelper.SetNextAbilities(m1, m2, m3)
     if m2 and m2.abilityDef then
         f._icon2:SetTexture(m2.abilityDef.icon)
         table.insert(spellsToGlow, { spellName = m2.abilityDef.name, r = 1.0, g = 0.5, b = 0.0 })
+        f._spellName2 = m2.abilityDef.name
         
         local bind = spellKeybinds[m2.abilityDef.name:lower()] or ""
         f._key2:SetText(bind)
+
+        local start, duration = GetSpellCooldown(m2.abilityDef.name)
+        if start and duration and duration > 0 then
+            f._cd2:SetCooldown(start, duration)
+            f._cd2:Show()
+        else
+            f._cd2:Hide()
+        end
     else
         f._icon2:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
         f._key2:SetText("")
+        f._cd2:Hide()
+        f._spellName2 = nil
     end
 
     -- Tertiary
     if m3 and m3.abilityDef then
         f._icon3:SetTexture(m3.abilityDef.icon)
         table.insert(spellsToGlow, { spellName = m3.abilityDef.name, r = 1.0, g = 0.0, b = 0.0 })
+        f._spellName3 = m3.abilityDef.name
         
         local bind = spellKeybinds[m3.abilityDef.name:lower()] or ""
         f._key3:SetText(bind)
+
+        local start, duration = GetSpellCooldown(m3.abilityDef.name)
+        if start and duration and duration > 0 then
+            f._cd3:SetCooldown(start, duration)
+            f._cd3:Show()
+        else
+            f._cd3:Hide()
+        end
     else
         f._icon3:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
         f._key3:SetText("")
+        f._cd3:Hide()
+        f._spellName3 = nil
     end
 
     UpdateActionBarGlows(spellsToGlow)
@@ -315,6 +362,19 @@ function CoAAT_RotationHelper.SetNextAbility(abilityId, urgency, abilityDef)
         CoAAT_RotationHelper.SetNextAbilities({abilityId=abilityId, urgency=urgency, abilityDef=abilityDef}, nil, nil)
     else
         CoAAT_RotationHelper.SetNextAbilities(nil, nil, nil)
+    end
+end
+
+-- ─────────────────────────────────────────────
+-- AoE Mode Toggle Badge update
+-- ─────────────────────────────────────────────
+function CoAAT_RotationHelper.OnAoEToggled(isAoE)
+    if _frame and _frame._aoeBadge then
+        if isAoE then
+            _frame._aoeBadge:SetText("|cff00ffff[AOE MODE]|r")
+        else
+            _frame._aoeBadge:SetText("|cff22ff22[SINGLE TARGET]|r")
+        end
     end
 end
 
@@ -336,6 +396,14 @@ function CoAAT_RotationHelper.OnClassChanged(classId, specId)
         _frame._key1:SetText("")
         _frame._key2:SetText("")
         _frame._key3:SetText("")
+        _frame._cd1:Hide()
+        _frame._cd2:Hide()
+        _frame._cd3:Hide()
+        _frame._spellName1 = nil
+        _frame._spellName2 = nil
+        _frame._spellName3 = nil
+        -- Reset AoE indicator
+        _frame._aoeBadge:SetText("|cff22ff22[SINGLE TARGET]|r")
     end
 end
 
@@ -350,16 +418,43 @@ function CoAAT_RotationHelper.OnCombatChange(inCombat)
     end
 end
 
+-- ─────────────────────────────────────────────
+-- Ticker checking range of targets
+-- ─────────────────────────────────────────────
 function CoAAT_RotationHelper.AnimTick(f, dt)
-    if not _current then return end
-    local ugc = UGC[_urgency] or UGC.low
-    local pulse = ugc.pulse
+    -- 1. Pulse animations
+    if _current then
+        local ugc = UGC[_urgency] or UGC.low
+        local pulse = ugc.pulse
 
-    local glowAlpha = math.abs(math.sin(_animPhase * pulse * 0.5)) * 0.7
-    if _urgency == "critical" then
-        glowAlpha = math.abs(math.sin(_animPhase * 5)) * 0.95
+        local glowAlpha = math.abs(math.sin(_animPhase * pulse * 0.5)) * 0.7
+        if _urgency == "critical" then
+            glowAlpha = math.abs(math.sin(_animPhase * 5)) * 0.95
+        end
+        f._glowRing:SetAlpha(glowAlpha)
     end
-    f._glowRing:SetAlpha(glowAlpha)
+
+    -- 2. Range Telemetry checking
+    if not UnitExists("target") or UnitIsDead("target") then
+        f._icon1:SetVertexColor(1, 1, 1, 1)
+        f._icon2:SetVertexColor(1, 1, 1, 1)
+        f._icon3:SetVertexColor(1, 1, 1, 1)
+        return
+    end
+
+    local function checkRange(icon, spellName)
+        if not spellName then return end
+        local inRange = IsSpellInRange(spellName, "target")
+        if inRange == 0 then
+            icon:SetVertexColor(1.0, 0.25, 0.25, 0.6) -- Out of range: Red/Dimmed
+        else
+            icon:SetVertexColor(1.0, 1.0, 1.0, 1.0) -- In range
+        end
+    end
+
+    checkRange(f._icon1, f._spellName1)
+    checkRange(f._icon2, f._spellName2)
+    checkRange(f._icon3, f._spellName3)
 end
 
 function CoAAT_RotationHelper.Toggle()

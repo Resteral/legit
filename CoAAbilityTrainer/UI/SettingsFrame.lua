@@ -275,20 +275,30 @@ function CoAAT_SettingsFrame.Build()
         CoAAT_RotationHelper.Toggle()
     end)
 
+    -- Option: AoE Mode Toggle
+    local aoeModeCB = CreateFrame("CheckButton", "CoAATAoEModeCB", f, "UICheckButtonTemplate")
+    aoeModeCB:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -250)
+    _G[aoeModeCB:GetName() .. "Text"]:SetText("|cffddddddEnable AoE Mode (cleave recommendations)|r")
+    aoeModeCB:SetChecked(CoAAT_Engine.GetAoEMode())
+    aoeModeCB:SetScript("OnClick", function(self)
+        CoAAT_Engine.ToggleAoEMode()
+    end)
+    f._aoeModeCB = aoeModeCB
+
     -- ── Divider ──
     local div2 = f:CreateTexture(nil, "OVERLAY")
     div2:SetSize(352, 1)
-    div2:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -254)
+    div2:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -280)
     div2:SetTexture(0.0, 0.4, 0.7, 0.4)
 
     -- ── Quick Rotation Summary ──
     local rotHdr = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    rotHdr:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -264)
+    rotHdr:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -290)
     rotHdr:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
     rotHdr:SetText("|cffFFD700Current Rotation Summary|r")
 
     local rotSummary = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    rotSummary:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -284)
+    rotSummary:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -310)
     rotSummary:SetSize(352, 80)
     rotSummary:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
     rotSummary:SetJustifyH("LEFT")
@@ -428,6 +438,10 @@ end
 function CoAAT_SettingsFrame.OnOpen()
     local f = _frame
     if not f then return end
+
+    if f._aoeModeCB then
+        f._aoeModeCB:SetChecked(CoAAT_Engine.GetAoEMode())
+    end
 
     local classId = CoAAT_Engine.GetClassId()
     local specId  = CoAAT_Engine.GetSpecId()
