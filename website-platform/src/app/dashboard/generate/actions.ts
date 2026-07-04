@@ -5,28 +5,53 @@ import { revalidatePath } from 'next/cache'
 import { generateText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 
-export async function saveGeneratedSite(industry: string, prompt: string) {
+export async function saveGeneratedSite(
+  businessName: string,
+  industry: string,
+  prompt: string,
+  targetAudience: string,
+  features: string[],
+  colorScheme: string,
+  location: string
+) {
   const supabase = await createClient()
 
-  // 1. Get the current logged in user
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
   if (authError || !user) {
     return { error: 'You must be logged in to generate a site.' }
   }
 
-  // 2. Generate HTML with Claude
+  // 1. Construct prompt for Claude Sonnet
+  const systemPrompt = `You are an expert web developer and UI designer. 
+Your task is to generate a beautiful, modern, responsive landing page using HTML and Tailwind CSS via CDN.
+Include a Header, Hero Section, Features Section, and Footer.
+Do not include \`\`\`html tags in the output, just raw valid HTML starting with <!DOCTYPE html>.
+Ensure the Tailwind CSS script is included in the <head>: <script src="https://cdn.tailwindcss.com"></script>.
+Include inline CSS animations.
+The page MUST match the user's styling vibe (Colors: ${colorScheme}).`;
+
+  const userPrompt = `Generate the full HTML page for:
+Business Name: ${businessName}
+Industry: ${industry}
+Target Audience: ${targetAudience}
+Location/City: ${location}
+Core Description: ${prompt}
+Vibe/Color Theme: ${colorScheme}
+Requested Interactive Features to design into the page:
+${features.map(f => `- ${f}`).join('\n')}
+
+Specific design guidelines:
+- If E-Commerce is requested, design a fully styled product grid with prices, stock tags, and "Add to Cart" buttons.
+- If Contact Form is requested, build a beautiful card form with input fields for Name, Email, and message.
+- If Booking Calendar is requested, render a modern calendar scheduler UI block with time slots.
+- Make the header logo say "${businessName}".`;
+
   let generatedHtml = '';
   try {
     const response = await generateText({
       model: anthropic('claude-3-5-sonnet-latest'),
-      system: `You are an expert web developer and UI designer. 
-Your task is to generate a beautiful, modern, responsive landing page using HTML and Tailwind CSS via CDN.
-The page should include a Header, Hero Section, Features Section, and Footer. 
-Do not include \`\`\`html tags in the output, just raw valid HTML starting with <!DOCTYPE html>.
-Ensure the Tailwind CSS script is included in the <head>: <script src="https://cdn.tailwindcss.com"></script>.
-Make it look incredibly premium, colorful, and modern. Add inline CSS animations if possible.`,
-      prompt: `Industry: ${industry}\nUser Request: ${prompt}\n\nPlease generate the full HTML page.`,
+      system: systemPrompt,
+      prompt: userPrompt,
     });
     
     generatedHtml = response.text.trim();
@@ -38,33 +63,32 @@ Make it look incredibly premium, colorful, and modern. Add inline CSS animations
     return { error: 'Failed to connect to AI generator. Make sure ANTHROPIC_API_KEY is set in .env.local.' }
   }
 
-  // 3. Insert the new site into the database
-  const siteName = `${industry} Site - ${Math.random().toString(36).substring(7)}`
-  const fakeUrl = `${siteName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}.aisite.pro`
+  // 2. Insert into the database
+  const siteUrl = `${businessName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}.resolve.bet`;
   
   const { data: siteData, error: siteError } = await supabase
     .from('sites')
     .insert([
       {
         user_id: user.id,
-        name: siteName,
+        name: businessName,
         industry: industry,
-        prompt: prompt,
-        url: fakeUrl,
+        prompt: `Name: ${businessName}. Description: ${prompt}. Audience: ${targetAudience}. Features: ${features.join(', ')}. Theme: ${colorScheme}.`,
+        url: siteUrl,
         status: 'Published',
-        html_content: generatedHtml
+        html_content: generatedHtml,
+        location: location || 'Seattle, WA'
       }
     ])
     .select()
-    .single()
+    .single();
 
   if (siteError) {
     console.error('Error saving site:', siteError)
     return { error: 'Failed to save generated site to database.' }
   }
 
-  // Revalidate the dashboard pages so the new site appears
-  revalidatePath('/dashboard', 'layout')
+  revalidatePath('/dashboard', 'layout');
   
-  return { success: true, site: siteData }
+  return { success: true, site: siteData };
 }

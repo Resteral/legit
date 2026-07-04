@@ -1,34 +1,113 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Loader2, Sparkles, LayoutTemplate, Palette, Globe } from "lucide-react";
+import { Wand2, Loader2, Sparkles, Palette, Globe, CheckSquare, Square, Building2, HelpCircle, Terminal } from "lucide-react";
 import Link from "next/link";
 import { saveGeneratedSite } from "./actions";
+
+const COLORS = [
+  { name: "Clean Minimalist Dark", class: "bg-slate-900 border-slate-700 text-white" },
+  { name: "Neon Cyberpunk", class: "bg-purple-950 border-purple-500 text-pink-400" },
+  { name: "Warm Pastel Retro", class: "bg-orange-50 border-orange-200 text-orange-900" },
+  { name: "Vibrant Corporate Blue", class: "bg-blue-950 border-blue-600 text-blue-100" }
+];
+
+const AVAILABLE_FEATURES = [
+  "Online Shop / Storefront",
+  "Booking & Reservation Calendar",
+  "Contact & Lead Forms",
+  "Live Customer Chat Support"
+];
 
 export default function GenerateSite() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [prompt, setPrompt] = useState("");
+  
+  // In-depth Questionnaire States
+  const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [colorScheme, setColorScheme] = useState("Clean Minimalist Dark");
+  const [location, setLocation] = useState("");
+  const [features, setFeatures] = useState<string[]>([]);
+
+  // Simulated Live Bot Builder Terminal logs
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [logIndex, setLogIndex] = useState(0);
+
+  const logsSequence = [
+    "🚀 Initializing AI Website Agent...",
+    "🔑 Handshaking with Claude 3.5 Sonnet model...",
+    `🎨 Designing themed layout using the "${colorScheme}" color palette...`,
+    `🏢 Customizing workspace files for ${businessName}...`,
+    "🛠️ Crafting responsive header, footer, and navigation components...",
+    features.includes("Online Shop / Storefront") ? "🛍️ Injecting e-commerce product grids and mock checkout flow..." : null,
+    features.includes("Booking & Reservation Calendar") ? "📅 Compiling dynamic appointment and calendar scheduler blocks..." : null,
+    features.includes("Contact & Lead Forms") ? "📨 Integrating lead capture forms and database endpoints..." : null,
+    features.includes("Live Customer Chat Support") ? "💬 Embedding Live Support chat widget into page footer..." : null,
+    `📍 Setting up location meta info for "${location || 'Seattle, WA'}"...`,
+    "⚡ Compiling Tailwind CSS stylesheet and inline animations...",
+    "📦 Bundling package builds and deploying preview bundle to CDN...",
+    "🎉 Site generated successfully! Transferring to dashboard..."
+  ].filter(Boolean) as string[];
+
+  // Trigger terminal logs simulation when generating
+  useEffect(() => {
+    if (isGenerating && logIndex < logsSequence.length) {
+      const delay = logIndex === 0 ? 300 : Math.random() * 800 + 400;
+      const timer = setTimeout(() => {
+        setTerminalLogs((prev) => [...prev, logsSequence[logIndex]]);
+        setLogIndex((prev) => prev + 1);
+      }, delay);
+      return () => clearTimeout(timer);
+    }
+  }, [isGenerating, logIndex, logsSequence]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
-    // Call our server action to save the site to the database
-    const result = await saveGeneratedSite(industry, prompt);
-    
+    setTerminalLogs([]);
+    setLogIndex(0);
+
+    // Call server action to save the site
+    const result = await saveGeneratedSite(
+      businessName || "Unnamed Business",
+      industry || "Technology",
+      prompt || "A beautiful placeholder landing page",
+      targetAudience || "General Public",
+      features,
+      colorScheme,
+      location || "Seattle, WA"
+    );
+
     if (result.error) {
       alert(result.error);
       setIsGenerating(false);
       return;
     }
-    
-    // Simulate generation delay
-    setTimeout(() => {
-      setIsGenerating(false);
-      setStep(3); // Go to preview step
-    }, 4000);
+
+    // Keep displaying the builder logs until finished
+    const finishInterval = setInterval(() => {
+      setTerminalLogs((prev) => {
+        if (prev.length < logsSequence.length) {
+          return prev;
+        } else {
+          clearInterval(finishInterval);
+          setTimeout(() => {
+            setIsGenerating(false);
+            setStep(3); // Go to preview page
+          }, 800);
+          return prev;
+        }
+      });
+    }, 500);
+  };
+
+  const toggleFeature = (feat: string) => {
+    setFeatures((prev) =>
+      prev.includes(feat) ? prev.filter((f) => f !== feat) : [...prev, feat]
+    );
   };
 
   return (
@@ -37,35 +116,60 @@ export default function GenerateSite() {
         <h1 className="text-3xl md:text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">
           AI Website Generator
         </h1>
-        <p className="text-muted-foreground">Describe your business, and our AI will build, configure, and host your perfect website in seconds.</p>
+        <p className="text-muted-foreground text-sm">
+          Complete our in-depth configuration questionnaire to let the bot construct a custom landing page.
+        </p>
       </header>
 
       <div className="relative">
         <AnimatePresence mode="wait">
-          {/* STEP 1: Describe */}
+          {/* STEP 1: General Business Identity */}
           {step === 1 && (
             <motion.div
               key="step1"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-secondary/20 border border-border/50 rounded-3xl p-8 max-w-3xl mx-auto shadow-2xl backdrop-blur-sm"
+              className="bg-secondary/20 border border-border/50 rounded-3xl p-8 max-w-3xl mx-auto shadow-2xl backdrop-blur-sm space-y-6"
             >
-              <div className="flex items-center gap-3 mb-6 text-primary">
-                <Sparkles className="w-6 h-6" />
-                <h2 className="text-xl font-bold">What are you building?</h2>
+              <div className="flex items-center gap-3 mb-2 text-primary border-b border-border/30 pb-4">
+                <Building2 className="w-6 h-6" />
+                <h2 className="text-xl font-bold">1. Business Identity</h2>
               </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-muted-foreground">Select Industry</label>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">Business Name</label>
+                  <input
+                    type="text"
+                    className="w-full bg-background border border-border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    placeholder="e.g. Pixelcraft Studio"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">Location / City</label>
+                  <input
+                    type="text"
+                    className="w-full bg-background border border-border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    placeholder="e.g. Seattle, WA (optional)"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">Select Industry</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {["Technology", "E-Commerce", "Portfolio", "Agency"].map((ind) => (
                     <button
                       key={ind}
                       onClick={() => setIndustry(ind)}
-                      className={`p-3 rounded-xl border text-sm font-medium transition-colors ${
+                      className={`p-3 rounded-xl border text-sm font-medium transition-all ${
                         industry === ind 
-                          ? "bg-primary/20 border-primary/50 text-primary" 
+                          ? "bg-primary/20 border-primary/50 text-primary scale-105" 
                           : "bg-secondary/50 border-border hover:border-primary/30"
                       }`}
                     >
@@ -75,75 +179,226 @@ export default function GenerateSite() {
                 </div>
               </div>
 
-              <div className="mb-8">
-                <label className="block text-sm font-medium mb-2 text-muted-foreground">Describe your website</label>
-                <textarea
-                  className="w-full bg-background border border-border rounded-xl p-4 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
-                  placeholder="e.g. A modern portfolio for a freelance graphic designer who specializes in 3D animations and brand identity..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                />
-              </div>
-
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <button
                   onClick={() => setStep(2)}
-                  disabled={!prompt || !industry}
-                  className="bg-primary text-white px-8 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={!businessName || !industry}
+                  className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next Step
+                  Continue Setup
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: Generating */}
+          {/* STEP 2: Theme & Features */}
           {step === 2 && (
             <motion.div
               key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="bg-secondary/20 border border-border/50 rounded-3xl p-8 max-w-3xl mx-auto shadow-2xl backdrop-blur-sm space-y-6"
+            >
+              <div className="flex items-center gap-3 mb-2 text-primary border-b border-border/30 pb-4">
+                <Palette className="w-6 h-6" />
+                <h2 className="text-xl font-bold">2. Theme & Features</h2>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-3 text-muted-foreground">Color Vibe / Palette</label>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {COLORS.map((col) => (
+                    <button
+                      key={col.name}
+                      onClick={() => setColorScheme(col.name)}
+                      className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                        colorScheme === col.name 
+                          ? "ring-2 ring-primary border-transparent scale-[1.02]" 
+                          : "opacity-75 hover:opacity-100"
+                      } ${col.class}`}
+                    >
+                      <span className="font-bold text-sm">{col.name}</span>
+                      <span className="text-[10px] mt-1 opacity-70">Custom design scheme</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-3 text-muted-foreground">Interactive Features to Inject</label>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {AVAILABLE_FEATURES.map((feat) => {
+                    const isChecked = features.includes(feat);
+                    return (
+                      <button
+                        key={feat}
+                        onClick={() => toggleFeature(feat)}
+                        className={`p-3.5 rounded-xl border text-left flex items-center gap-3 transition-colors ${
+                          isChecked 
+                            ? "bg-primary/10 border-primary/40 text-primary" 
+                            : "bg-secondary/40 border-border hover:border-primary/20"
+                        }`}
+                      >
+                        {isChecked ? (
+                          <CheckSquare className="w-5 h-5 text-primary shrink-0" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-500 shrink-0" />
+                        )}
+                        <span className="text-sm font-medium">{feat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <button
+                  onClick={() => setStep(1)}
+                  className="px-6 py-3 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(3)}
+                  className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Almost Done
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 3: Stance & Goal */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="bg-secondary/20 border border-border/50 rounded-3xl p-8 max-w-3xl mx-auto shadow-2xl backdrop-blur-sm space-y-6"
+            >
+              <div className="flex items-center gap-3 mb-2 text-primary border-b border-border/30 pb-4">
+                <HelpCircle className="w-6 h-6" />
+                <h2 className="text-xl font-bold">3. Audience & Focus</h2>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">Target Audience</label>
+                <input
+                  type="text"
+                  className="w-full bg-background border border-border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                  placeholder="e.g. Tech founders, local foodies, gamers..."
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-muted-foreground">What is the core message / description?</label>
+                <textarea
+                  className="w-full bg-background border border-border rounded-xl p-4 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm resize-none"
+                  placeholder="Provide any details about services offered, unique values, or details you want prominently shown..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <button
+                  onClick={() => setStep(2)}
+                  className="px-6 py-3 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep(4)}
+                  disabled={!prompt || !targetAudience}
+                  className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Proceed to Builder
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 4: Ready & Live Builder Terminal Preview */}
+          {step === 4 && (
+            <motion.div
+              key="step4"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-secondary/20 border border-border/50 rounded-3xl p-12 max-w-2xl mx-auto shadow-2xl text-center"
+              className="bg-secondary/20 border border-border/50 rounded-3xl p-8 max-w-2xl mx-auto shadow-2xl"
             >
               {!isGenerating ? (
-                <>
-                  <Wand2 className="w-16 h-16 text-primary mx-auto mb-6" />
-                  <h2 className="text-2xl font-bold mb-4">Ready to generate?</h2>
-                  <p className="text-muted-foreground mb-8">We will consume 1 AI credit to build your complete website structure, copy, and styling.</p>
+                <div className="text-center space-y-6">
+                  <Wand2 className="w-16 h-16 text-primary mx-auto" />
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Ready to run builder?</h2>
+                    <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                      The AI Bot will consume 1 credit to structure, style, and inject layout configurations into your new website.
+                    </p>
+                  </div>
                   <div className="flex justify-center gap-4">
                     <button
-                      onClick={() => setStep(1)}
-                      className="px-6 py-3 rounded-xl font-medium hover:bg-secondary/80 transition-colors"
+                      onClick={() => setStep(3)}
+                      className="px-6 py-3 rounded-xl font-medium hover:bg-secondary/80 transition-colors text-sm"
                     >
-                      Back
+                      Modify Details
                     </button>
                     <button
                       onClick={handleGenerate}
-                      className="bg-primary text-white px-8 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                      className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2"
                     >
-                      <Sparkles className="w-5 h-5" />
-                      Generate Website
+                      <Sparkles className="w-5 h-5 text-amber-400" />
+                      Build Website
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="py-8">
-                  <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto mb-6" />
-                  <h2 className="text-2xl font-bold mb-2 animate-pulse">AI is building your site...</h2>
-                  <p className="text-muted-foreground">Writing copy, selecting components, and applying styles.</p>
+                /* LIVE Terminal Output */
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-5 h-5 text-amber-500" />
+                      <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">Website Bot Builder Logs</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Running live compile...
+                    </div>
+                  </div>
+
+                  <div className="bg-[#0b0f19] rounded-2xl p-5 font-mono text-xs text-green-400 border border-border/40 min-h-[220px] max-h-[300px] overflow-y-auto space-y-2.5">
+                    {terminalLogs.map((log, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="leading-relaxed"
+                      >
+                        {log}
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground text-center animate-pulse">
+                    The bot is organizing code components and embedding selected plugins...
+                  </p>
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* STEP 3: Preview */}
-          {step === 3 && (
+          {/* STEP 5: Success Preview */}
+          {step === 5 && (
             <motion.div
-              key="step3"
+              key="step5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="max-w-6xl mx-auto"
             >
+              {/* Preview View is now step 5 */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -152,11 +407,8 @@ export default function GenerateSite() {
                   <p className="text-muted-foreground text-sm mt-1">Review your generated site before publishing.</p>
                 </div>
                 <div className="flex gap-3">
-                  <button className="px-4 py-2 bg-secondary rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-2">
-                    <Palette className="w-4 h-4" /> Customize Theme
-                  </button>
                   <Link href="/dashboard" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
-                    <Globe className="w-4 h-4" /> Publish & Host
+                    <Globe className="w-4 h-4" /> Go to Dashboard
                   </Link>
                 </div>
               </div>
@@ -171,36 +423,22 @@ export default function GenerateSite() {
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   </div>
                   <div className="mx-auto bg-background/50 rounded-md px-32 py-1 text-xs text-muted-foreground flex items-center gap-2">
-                    preview.aisite.pro <span className="opacity-50">/</span> {industry.toLowerCase()}
+                    {businessName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}.resolve.bet
                   </div>
                 </div>
                 
-                {/* Simulated Website Content */}
-                <div className="bg-background min-h-[600px] flex flex-col">
-                  {/* Mock Navbar */}
-                  <div className="p-6 flex justify-between items-center border-b border-border/10">
-                    <div className="font-bold text-xl">{industry} Brand</div>
-                    <div className="flex gap-6 text-sm">
-                      <span>Home</span>
-                      <span>Services</span>
-                      <span>About</span>
-                      <span>Contact</span>
-                    </div>
+                {/* Simulated Content */}
+                <div className="bg-background min-h-[600px] flex flex-col p-12 text-center items-center justify-center space-y-6">
+                  <h1 className="text-4xl font-extrabold">{businessName}</h1>
+                  <p className="text-muted-foreground max-w-md">{prompt}</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {features.map(f => (
+                      <span key={f} className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-xs rounded-full font-semibold">
+                        ✓ {f}
+                      </span>
+                    ))}
                   </div>
-                  {/* Mock Hero */}
-                  <div className="flex-grow flex flex-col items-center justify-center text-center p-12 relative overflow-hidden">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                    <h1 className="text-5xl font-black mb-6 max-w-3xl leading-tight">
-                      Elevating Your <span className="text-primary">{industry}</span> Experience
-                    </h1>
-                    <p className="text-lg text-muted-foreground max-w-2xl mb-10">
-                      {prompt.length > 50 ? prompt.substring(0, 100) + "..." : "We provide top-tier solutions tailored to your unique business needs, powered by cutting-edge technology and design."}
-                    </p>
-                    <div className="flex gap-4">
-                      <div className="bg-primary text-white px-8 py-3 rounded-full font-medium shadow-lg shadow-primary/20">Get Started</div>
-                      <div className="bg-secondary px-8 py-3 rounded-full font-medium">Learn More</div>
-                    </div>
-                  </div>
+                  <p className="text-xs text-gray-500">Theme Palette applied: {colorScheme}</p>
                 </div>
               </div>
             </motion.div>
