@@ -23,7 +23,7 @@ local C = {
     highlight  = { r=0.1,  g=0.2,  b=0.35, a=0.6  },
 }
 
-local tabs = { "Guide", "Classes", "Zone Info", "Endgame Gear" }
+local tabs = { "Guide", "Classes", "Zone Info", "Gear Guide", "PvP Guide" }
 local activeTab = 1
 local tabFrames = {}
 
@@ -192,6 +192,10 @@ function CoALevelGuide_MainFrame.Create()
     local gearPanel = CoALevelGuide_MainFrame.BuildGearPanel(content)
     f._gearPanelFrame = gearPanel
 
+    -- PvP info panel
+    local pvpPanel = CoALevelGuide_MainFrame.BuildPvPPanel(content)
+    f._pvpPanelFrame = pvpPanel
+
     -- Initial state: show Guide tab
     CoALevelGuide_MainFrame.SwitchTab(1)
 
@@ -249,6 +253,10 @@ function CoALevelGuide_MainFrame.SwitchTab(idx)
     if f._gearPanelFrame then
         if idx == 4 then f._gearPanelFrame:Show()
         else              f._gearPanelFrame:Hide() end
+    end
+    if f._pvpPanelFrame then
+        if idx == 5 then f._pvpPanelFrame:Show()
+        else              f._pvpPanelFrame:Hide() end
     end
 end
 
@@ -764,6 +772,176 @@ function CoALevelGuide_MainFrame.BuildGearPanel(parent)
     -- Initial render
     RenderContent(selectedClassId)
 
+    panel:Hide()
+    return panel
+end
+
+-- ─────────────────────────────────────────────
+-- PvP Guides Panel (Tab 5)
+-- ─────────────────────────────────────────────
+function CoALevelGuide_MainFrame.BuildPvPPanel(parent)
+    local panel = CreateFrame("ScrollFrame", "CoALevelGuidePvPScroll", parent, "UIPanelScrollFrameTemplate")
+    panel:SetAllPoints(parent)
+
+    local child = CreateFrame("Frame", nil, panel)
+    child:SetWidth(parent:GetWidth() - 24)
+    child:SetHeight(1) -- grows dynamically
+    panel:SetScrollChild(child)
+
+    local yOff = -8
+
+    -- Header
+    local header = child:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    header:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+    header:SetFont("Fonts\\FRIZQT__.TTF", 13, "OUTLINE")
+    header:SetText("|cffc544ffConquest of Azeroth PvP Guide|r")
+    yOff = yOff - 24
+
+    -- Subheader
+    local sub = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    sub:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+    sub:SetWidth(child:GetWidth() - 8)
+    sub:SetJustifyH("LEFT")
+    sub:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    sub:SetText("|cffaaaaaaLearn Battleground tactics, copy essential macros, and read optimal combat stats.|r")
+    yOff = yOff - 28
+
+    -- Section 1: Battleground Strategies
+    local bgHeader = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    bgHeader:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+    bgHeader:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    bgHeader:SetText("|cffFFD700⚔ Battleground Strategy Cards|r")
+    yOff = yOff - 18
+
+    for _, bg in ipairs(CoALevelGuide_PvPGuides.battlegrounds) do
+        local card = CreateFrame("Frame", nil, child)
+        card:SetWidth(child:GetWidth() - 8)
+        card:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+
+        local title = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -6)
+        title:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+        title:SetText("|cff00ccff" .. bg.name .. "|r")
+
+        local strat = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        strat:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -20)
+        strat:SetWidth(card:GetWidth() - 16)
+        strat:SetJustifyH("LEFT")
+        strat:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+        strat:SetText("|cffffffffStrategy:|r " .. bg.strategy)
+
+        local localY = -24 - strat:GetStringHeight()
+
+        for _, tip in ipairs(bg.tips) do
+            local tipText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            tipText:SetPoint("TOPLEFT", card, "TOPLEFT", 16, localY)
+            tipText:SetWidth(card:GetWidth() - 24)
+            tipText:SetJustifyH("LEFT")
+            tipText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+            tipText:SetText("|cff00ff88•|r |cffdddddd" .. tip .. "|r")
+            localY = localY - (tipText:GetStringHeight() + 2)
+        end
+
+        local cardH = math.abs(localY) + 8
+        card:SetHeight(cardH)
+
+        -- Glassmorphic BG
+        local bgTex = card:CreateTexture(nil, "BACKGROUND")
+        bgTex:SetAllPoints()
+        bgTex:SetTexture(0.04, 0.08, 0.18, 0.8)
+
+        local cardBorder = card:CreateTexture(nil, "OVERLAY")
+        cardBorder:SetSize(2, cardH)
+        cardBorder:SetPoint("TOPLEFT", card, "TOPLEFT", 0, 0)
+        cardBorder:SetTexture(0.77, 0.27, 1.0, 0.9) -- violet border for PvP cards
+
+        yOff = yOff - cardH - 12
+    end
+
+    -- Section 2: Copyable PvP Macros
+    local macroHeader = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    macroHeader:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+    macroHeader:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    macroHeader:SetText("|cffFFD700📋 Essential PvP Macros (Click text area to Copy)|r")
+    yOff = yOff - 18
+
+    for _, mac in ipairs(CoALevelGuide_PvPGuides.macros) do
+        local mFrame = CreateFrame("Frame", nil, child)
+        mFrame:SetWidth(child:GetWidth() - 8)
+        mFrame:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+
+        local mTitle = mFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        mTitle:SetPoint("TOPLEFT", mFrame, "TOPLEFT", 8, -6)
+        mTitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+        mTitle:SetText("|cff00ff88" .. mac.name .. "|r  •  |cffaaaaaa" .. mac.desc .. "|r")
+
+        -- EditBox for Copying (Ctrl+C)
+        local eb = CreateFrame("EditBox", nil, mFrame)
+        eb:SetSize(mFrame:GetWidth() - 16, 40)
+        eb:SetPoint("TOPLEFT", mFrame, "TOPLEFT", 8, -20)
+        eb:SetFontObject("GameFontHighlightSmall")
+        eb:SetMultiLine(true)
+        eb:SetMaxLetters(250)
+        eb:SetAutoFocus(false)
+        eb:SetText(mac.body)
+        
+        -- EditBox Background
+        local ebBG = eb:CreateTexture(nil, "BACKGROUND")
+        ebBG:SetAllPoints()
+        ebBG:SetTexture(0.02, 0.02, 0.05, 0.9)
+
+        local frameH = 26 + 40
+        mFrame:SetHeight(frameH)
+
+        local mBG = mFrame:CreateTexture(nil, "BACKGROUND")
+        mBG:SetAllPoints()
+        mBG:SetTexture(0.04, 0.06, 0.12, 0.7)
+
+        local sideBorder = mFrame:CreateTexture(nil, "OVERLAY")
+        sideBorder:SetSize(2, frameH)
+        sideBorder:SetPoint("TOPLEFT", mFrame, "TOPLEFT", 0, 0)
+        sideBorder:SetTexture(0.55, 0.0, 0.85, 0.8)
+
+        yOff = yOff - frameH - 12
+    end
+
+    -- Section 3: General PvP Tips
+    local tipsHeader = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    tipsHeader:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+    tipsHeader:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    tipsHeader:SetText("|cffFFD700💡 Advanced PvP Strategies & Tips|r")
+    yOff = yOff - 18
+
+    local tipsCard = CreateFrame("Frame", nil, child)
+    tipsCard:SetWidth(child:GetWidth() - 8)
+    tipsCard:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOff)
+
+    local localY = -8
+    for _, tip in ipairs(CoALevelGuide_PvPGuides.tips) do
+        local tipText = tipsCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        tipText:SetPoint("TOPLEFT", tipsCard, "TOPLEFT", 12, localY)
+        tipText:SetWidth(tipsCard:GetWidth() - 20)
+        tipText:SetJustifyH("LEFT")
+        tipText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+        tipText:SetText("|cffc544ff•|r |cffdddddd" .. tip .. "|r")
+        localY = localY - (tipText:GetStringHeight() + 6)
+    end
+
+    local tipsCardH = math.abs(localY) + 4
+    tipsCard:SetHeight(tipsCardH)
+
+    local tBG = tipsCard:CreateTexture(nil, "BACKGROUND")
+    tBG:SetAllPoints()
+    tBG:SetTexture(0.04, 0.08, 0.18, 0.6)
+
+    local tBorder = tipsCard:CreateTexture(nil, "OVERLAY")
+    tBorder:SetSize(2, tipsCardH)
+    tBorder:SetPoint("TOPLEFT", tipsCard, "TOPLEFT", 0, 0)
+    tBorder:SetTexture(0.77, 0.27, 1.0, 0.9)
+
+    yOff = yOff - tipsCardH - 20
+
+    child:SetHeight(math.abs(yOff) + 20)
     panel:Hide()
     return panel
 end
