@@ -133,26 +133,27 @@ function CoAAT_RotationHelper.Build(parent)
         return tex, border, keyText, cdFrame
     end
 
-    -- Primary Icon (Center-Left, MASSIVE)
-    f._icon1, f._border1, f._key1, f._cd1 = createIconSlot(f, 72, 0.0, 1.0, 0.0)
-    f._border1:SetPoint("CENTER", f, "CENTER", -50, 10)
+    -- Primary Icon (Centered, Floating)
+    f._icon1, f._border1, f._key1, f._cd1 = createIconSlot(f, 40, 0.0, 0.6, 1.0)
+    f._border1:SetPoint("CENTER", f, "CENTER", 0, 0)
 
     -- Pulsing glow ring around primary icon
     local glowRing = f:CreateTexture(nil, "OVERLAY")
-    glowRing:SetSize(110, 110)
+    glowRing:SetSize(68, 68)
     glowRing:SetPoint("CENTER", f._icon1, "CENTER", 0, 0)
     glowRing:SetTexture("Interface\\Cooldown\\star4")
     glowRing:SetBlendMode("ADD")
     glowRing:SetAlpha(0)
     f._glowRing = glowRing
 
-    -- Secondary Icon (Center-Right, Medium)
+    -- Secondary / Tertiary slots (Hidden for clean single-icon floating look)
     f._icon2, f._border2, f._key2, f._cd2 = createIconSlot(f, 48, 1.0, 0.5, 0.0)
     f._border2:SetPoint("LEFT", f._border1, "RIGHT", 15, -12)
+    f._border2:Hide()
 
-    -- Tertiary Icon (Far Right, Small)
     f._icon3, f._border3, f._key3, f._cd3 = createIconSlot(f, 36, 1.0, 0.0, 0.0)
     f._border3:SetPoint("LEFT", f._border2, "RIGHT", 10, -6)
+    f._border3:Hide()
 
     -- AoE Mode Badge
     local aoeBadge = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -431,6 +432,17 @@ end
 -- Ticker checking range of targets
 -- ─────────────────────────────────────────────
 function CoAAT_RotationHelper.AnimTick(f, dt)
+    -- Hide hints and helper texts in combat for absolute WeakAura cleanliness
+    if InCombatLockdown() then
+        f._abilityName:Hide()
+        f._hintText:Hide()
+        f._aoeBadge:Hide()
+    else
+        f._abilityName:Show()
+        f._hintText:Show()
+        f._aoeBadge:Show()
+    end
+
     -- 1. Pulse animations
     if _current then
         local ugc = UGC[_urgency] or UGC.low

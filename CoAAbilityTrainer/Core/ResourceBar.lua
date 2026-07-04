@@ -6,8 +6,8 @@
 
 CoAAT_ResourceBar = {}
 
-local BAR_W = 300
-local BAR_H = 20
+local BAR_W = 264
+local BAR_H = 12
 local _frame = nil
 
 -- ─────────────────────────────────────────────
@@ -96,12 +96,12 @@ function CoAAT_ResourceBar.Build(parent, posX, posY)
     overflowTex:SetBlendMode("ADD")
     f._overflow = overflowTex
 
-    -- Chunk segments (visual tick marks every 20%)
-    for i = 1, 4 do
+    -- Chunk segments (visual black separator blocks for segmented look)
+    for i = 1, 5 do
         local seg = f:CreateTexture(nil, "OVERLAY")
-        seg:SetSize(1, BAR_H - 2)
-        seg:SetPoint("LEFT", groove, "LEFT", math.floor((BAR_W - 8) * (i / 5)), 0)
-        seg:SetTexture(0.1, 0.2, 0.4, 0.6)
+        seg:SetSize(2, BAR_H)
+        seg:SetPoint("LEFT", groove, "LEFT", math.floor((BAR_W - 4) * (i / 6)), 0)
+        seg:SetTexture(0, 0, 0, 1)
     end
 
     -- Animation tick

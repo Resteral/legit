@@ -58,30 +58,36 @@ function CoAAT_CombatHUD.Build()
 
     -- ── Section containers ──
 
-    -- 1. Aura grid (Top, 100px)
-    local auraSection = CreateFrame("Frame", nil, hud)
-    auraSection:SetSize(HUD_W, 100)
-    hud._auraSection = auraSection
-
-    -- 2. Rotation Helper (Centerpiece, 120px)
+    -- 1. Rotation Helper (Top suggested floating icon, 50px)
     local rotSection = CreateFrame("Frame", nil, hud)
-    rotSection:SetSize(HUD_W, 120)
+    rotSection:SetSize(HUD_W, 50)
     hud._rotSection = rotSection
 
-    -- 3. Resource bar (Below Rotation, 30px)
+    -- 2. Aura grid (Main horizontal row, 34px)
+    local auraSection = CreateFrame("Frame", nil, hud)
+    auraSection:SetSize(HUD_W, 34)
+    hud._auraSection = auraSection
+
+    -- 3. Resource bar (Below Auras, 14px)
     local resSection = CreateFrame("Frame", nil, hud)
-    resSection:SetSize(HUD_W, 30)
+    resSection:SetSize(HUD_W, 14)
     hud._resSection = resSection
 
-    -- 4. Cooldown strip (Bottom, 40px)
+    -- 4. Casting Bar (Below Resource, 20px)
+    local castSection = CreateFrame("Frame", nil, hud)
+    castSection:SetSize(HUD_W, 20)
+    hud._castSection = castSection
+
+    -- 5. Cooldown strip (Bottom, 44px)
     local cdSection = CreateFrame("Frame", nil, hud)
-    cdSection:SetSize(HUD_W, 40)
+    cdSection:SetSize(HUD_W, 44)
     hud._cdSection = cdSection
 
     -- Build sub-panels inside their sections
-    CoAAT_AuraDisplay.Build(auraSection)
     CoAAT_RotationHelper.Build(rotSection)
-    CoAAT_ResourceBar.Build(resSection, 0, 10)
+    CoAAT_AuraDisplay.Build(auraSection)
+    CoAAT_ResourceBar.Build(resSection, 0, -6)
+    CoAAT_CastingBar.Build(castSection)
     CoAAT_CooldownTracker.Build(cdSection)
     CoAAT_ProcAlert.Build()  -- builds floating overlay
 
@@ -132,38 +138,45 @@ function CoAAT_CombatHUD.RefreshLayout()
     -- Determine layout Y offsets dynamically (preventing blank gaps)
     local yOffset = -30
 
-    -- 1. Auras
-    if db.showAuras and hud._auraSection then
-        hud._auraSection:Show()
-        hud._auraSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
-        yOffset = yOffset - 100 - 5
-    else
-        if hud._auraSection then hud._auraSection:Hide() end
-    end
-
-    -- 2. Rotation Helper
+    -- 1. Rotation Helper (Floating Suggested Action)
     if db.showRotHelper and hud._rotSection then
         hud._rotSection:Show()
         hud._rotSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
-        yOffset = yOffset - 120 - 5
+        yOffset = yOffset - 50 - 4
     else
         if hud._rotSection then hud._rotSection:Hide() end
     end
 
-    -- 3. Resource Bar
+    -- 2. Aura Display (Main Row)
+    if db.showAuras and hud._auraSection then
+        hud._auraSection:Show()
+        hud._auraSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
+        yOffset = yOffset - 34 - 2
+    else
+        if hud._auraSection then hud._auraSection:Hide() end
+    end
+
+    -- 3. Resource Bar (Segmented)
     if db.showResourceBar and hud._resSection then
         hud._resSection:Show()
         hud._resSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
-        yOffset = yOffset - 30 - 5
+        yOffset = yOffset - 14 - 4
     else
         if hud._resSection then hud._resSection:Hide() end
     end
 
-    -- 4. Cooldowns
+    -- 4. Casting Bar (Cast/GCD tracker)
+    if hud._castSection then
+        hud._castSection:Show()
+        hud._castSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
+        yOffset = yOffset - 20 - 4
+    end
+
+    -- 5. Cooldowns (Bottom Row)
     if db.showCooldowns and hud._cdSection then
         hud._cdSection:Show()
         hud._cdSection:SetPoint("TOP", hud, "TOP", 0, yOffset)
-        yOffset = yOffset - 40 - 5
+        yOffset = yOffset - 44 - 4
     else
         if hud._cdSection then hud._cdSection:Hide() end
     end

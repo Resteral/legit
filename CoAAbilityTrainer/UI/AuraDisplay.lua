@@ -8,9 +8,9 @@
 
 CoAAT_AuraDisplay = {}
 
-local AURA_SIZE  = 52
-local AURA_PAD   = 8
-local COLS       = 4
+local AURA_SIZE  = 32
+local AURA_PAD   = 1
+local COLS       = 8
 local auraIcons  = {}   -- array of icon widget tables
 local _parent    = nil
 
@@ -186,7 +186,7 @@ function CoAAT_AuraDisplay.OnClassChanged(classId, specId)
 
         -- Icon texture
         ic._icon:SetTexture(ab.icon)
-        ic._nameText:SetText(ab.name)
+        ic._nameText:SetText("") -- Hidden under icons for clean WeakAura look
 
         -- Type badge
         local typeShort = {
