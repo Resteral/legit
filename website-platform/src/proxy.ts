@@ -19,8 +19,14 @@ export default async function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = request.headers.get('host');
 
-  // Define our main domains
-  const isMainDomain = hostname?.includes('localhost') || 
+  // Define our main domains (treating local IPs as main domain for dev testing)
+  const isLocalIP = hostname?.startsWith('127.0.0.1') || 
+                     hostname?.startsWith('192.168.') || 
+                     hostname?.startsWith('10.') || 
+                     hostname?.startsWith('172.') || 
+                     hostname?.includes('localhost');
+
+  const isMainDomain = isLocalIP || 
                        hostname?.includes('resolve.bet') || 
                        hostname?.includes('vercel.app');
 
