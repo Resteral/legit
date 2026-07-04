@@ -883,7 +883,25 @@ function CoALevelGuide_MainFrame.BuildPvPPanel(parent)
         eb:SetMultiLine(true)
         eb:SetMaxLetters(250)
         eb:SetAutoFocus(false)
+        eb:EnableMouse(true)
         eb:SetText(mac.body)
+
+        -- Prevent editing while allowing selection/copying (avoiding recursive overflow)
+        local isResetting = false
+        eb:SetScript("OnTextChanged", function(self)
+            if isResetting then return end
+            isResetting = true
+            self:SetText(mac.body)
+            isResetting = false
+        end)
+
+        eb:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+        end)
+
+        eb:SetScript("OnEditFocusGained", function(self)
+            self:HighlightText()
+        end)
         
         -- EditBox Background
         local ebBG = eb:CreateTexture(nil, "BACKGROUND")
