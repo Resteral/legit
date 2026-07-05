@@ -113,6 +113,9 @@ local function SetBG(frame, r, g, b, a)
     local tex = frame:CreateTexture(nil, "BACKGROUND")
     tex:SetAllPoints()
     tex:SetTexture(r, g, b, a)
+    if tex.SetGradientAlpha then
+        tex:SetGradientAlpha("VERTICAL", r*0.4, g*0.4, b*0.4, a*1.02, r*1.3, g*1.3, b*1.3, a*0.93)
+    end
     return tex
 end
 

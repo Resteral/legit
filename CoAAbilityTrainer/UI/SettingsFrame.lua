@@ -104,16 +104,19 @@ function CoAAT_SettingsFrame.Build()
     f:SetScript("OnDragStart", function(self) self:StartMoving() end)
     f:SetScript("OnDragStop",  function(self) self:StopMovingOrSizing() end)
 
-    -- Background
+    -- Background (glassmorphic vertical gradient)
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetTexture(0.03, 0.04, 0.10, 0.97)
+    if bg.SetGradientAlpha then
+        bg:SetGradientAlpha("VERTICAL", 0.015, 0.02, 0.05, 0.98, 0.045, 0.06, 0.15, 0.94)
+    end
 
-    -- Borders
+    -- Borders (softened to 0.15 alpha to remove boxiness)
     local function makeLine(parent, w, h, point, relPoint, offX, offY)
         local l = parent:CreateTexture(nil, "OVERLAY")
         l:SetSize(w, h)
-        l:SetTexture(0.0, 0.5, 0.8, 0.5)
+        l:SetTexture(0.0, 0.5, 0.8, 0.15)
         l:SetPoint(point, parent, relPoint, offX, offY)
         return l
     end
