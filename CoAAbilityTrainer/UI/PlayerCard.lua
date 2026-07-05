@@ -222,7 +222,7 @@ function CoAAT_PlayerCard.Build(parent)
                 local np = FindTargetNameplate()
                 if np then
                     self:ClearAllPoints()
-                    self:SetPoint("LEFT", np, "RIGHT", 15, 0)
+                    self:SetPoint("LEFT", np, "RIGHT", 15, -45)
                 else
                     self:ClearAllPoints()
                     self:SetAllPoints(parent)
