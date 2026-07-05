@@ -70,6 +70,11 @@ local function CreateIcon(parent, index)
     border:SetTexCoord(0.05, 0.95, 0.05, 0.95)
     border:SetVertexColor(0.15, 0.45, 0.75, 0.7)
 
+    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    cd:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
+    cd:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+    cd:Hide()
+
     frame._icon       = icon
     frame._timer      = timerText
     frame._glow       = glow
@@ -79,6 +84,7 @@ local function CreateIcon(parent, index)
     frame._abilityId  = nil
     frame._onCooldown = false
     frame._glowPhase  = 0
+    frame._cd         = cd
 
     return frame
 end
@@ -169,6 +175,9 @@ function CoAAT_CooldownTracker.Tick(cooldowns, abilities)
                     ic._onCooldown = true
                     ic._desatOvr:Show()
                     ic._glow:SetAlpha(0)
+                    
+                    ic._cd:SetCooldown(cd.start, cd.duration)
+                    ic._cd:Show()
 
                     -- Format timer text
                     if remaining > 60 then
@@ -185,6 +194,7 @@ function CoAAT_CooldownTracker.Tick(cooldowns, abilities)
                         ic._desatOvr:Hide()
                         ic._timer:SetText("")
                         ic._glowPhase = 0
+                        ic._cd:Hide()
                         -- Trigger ready flash
                         CoAAT_CooldownTracker.FlashReady(ic)
                     end
@@ -194,6 +204,7 @@ function CoAAT_CooldownTracker.Tick(cooldowns, abilities)
                 ic._onCooldown = false
                 ic._desatOvr:Hide()
                 ic._timer:SetText("")
+                ic._cd:Hide()
             end
 
             -- Animate glow pulse

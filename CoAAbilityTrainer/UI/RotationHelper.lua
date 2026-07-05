@@ -453,6 +453,23 @@ function CoAAT_RotationHelper.AnimTick(f, dt)
             glowAlpha = math.abs(math.sin(_animPhase * 5)) * 0.95
         end
         f._glowRing:SetAlpha(glowAlpha)
+
+        -- Animate scaling of icon, border, and sweep CD overlay
+        local scaleMult = 1.0 + math.sin(_animPhase * pulse * 1.5) * 0.08
+        f._icon1:SetSize(40 * scaleMult, 40 * scaleMult)
+        f._border1:SetSize((40 + 4) * scaleMult, (40 + 4) * scaleMult)
+        f._cd1:SetSize(40 * scaleMult, 40 * scaleMult)
+
+        -- Scale glow ring to pulse in tandem
+        local glowScale = 1.0 + math.sin(_animPhase * pulse * 1.5) * 0.15
+        f._glowRing:SetSize(68 * glowScale, 68 * glowScale)
+    else
+        -- Reset to normal size if nothing suggested
+        f._icon1:SetSize(40, 40)
+        f._border1:SetSize(44, 44)
+        f._cd1:SetSize(40, 40)
+        f._glowRing:SetSize(68, 68)
+        f._glowRing:SetAlpha(0)
     end
 
     -- 2. Range Telemetry checking
