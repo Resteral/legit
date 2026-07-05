@@ -95,7 +95,7 @@ local SPEC_NAMES = {
 
 function CoAAT_SettingsFrame.Build()
     local f = CreateFrame("Frame", "CoAATSettingsFrame", UIParent)
-    f:SetSize(380, 450)
+    f:SetSize(380, 480)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     f:SetToplevel(true)
     f:SetMovable(true)
@@ -119,8 +119,8 @@ function CoAAT_SettingsFrame.Build()
     end
     makeLine(f, 380, 1, "TOPLEFT",     "TOPLEFT",     0,  0)
     makeLine(f, 380, 1, "BOTTOMLEFT",  "BOTTOMLEFT",  0,  0)
-    makeLine(f, 1, 450, "TOPLEFT",     "TOPLEFT",     0,  0)
-    makeLine(f, 1, 450, "TOPRIGHT",    "TOPRIGHT",    0,  0)
+    makeLine(f, 1, 480, "TOPLEFT",     "TOPLEFT",     0,  0)
+    makeLine(f, 1, 480, "TOPRIGHT",    "TOPRIGHT",    0,  0)
 
     -- Close button (top right)
     local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -281,15 +281,26 @@ function CoAAT_SettingsFrame.Build()
         CoAAT_CombatHUD.RefreshLayout()
     end)
 
+    local cursorHUDOrientCB = CreateFrame("CheckButton", "CoAATCursorHUDOrientCB", f, "UICheckButtonTemplate")
+    cursorHUDOrientCB:SetPoint("TOPLEFT", f, "TOPLEFT", 190, -260)
+    _G[cursorHUDOrientCB:GetName() .. "Text"]:SetText("|cffddddddHorizontal Cursor HUD|r")
+    cursorHUDOrientCB:SetChecked(CoAAT_DB and CoAAT_DB.cursorHUDOrientation == "horizontal")
+    cursorHUDOrientCB:SetScript("OnClick", function(self)
+        if CoAAT_DB then
+            CoAAT_DB.cursorHUDOrientation = self:GetChecked() and "horizontal" or "vertical"
+        end
+        CoAAT_CombatHUD.RefreshLayout()
+    end)
+
     -- Divider
     local div2 = f:CreateTexture(nil, "OVERLAY")
     div2:SetSize(352, 1)
-    div2:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -264)
+    div2:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -288)
     div2:SetTexture(0.0, 0.4, 0.7, 0.4)
 
-    -- Sliders: Scale & Opacity (Y = -263)
+    -- Sliders: Scale & Opacity (Y = -295)
     local scaleSlider = CreateFrame("Slider", "CoAATHUDScaleSlider", f, "OptionsSliderTemplate")
-    scaleSlider:SetPoint("TOPLEFT", f, "TOPLEFT", 20, -263)
+    scaleSlider:SetPoint("TOPLEFT", f, "TOPLEFT", 20, -295)
     scaleSlider:SetWidth(150)
     scaleSlider:SetMinMaxValues(0.5, 1.5)
     scaleSlider:SetValueStep(0.05)
@@ -304,7 +315,7 @@ function CoAAT_SettingsFrame.Build()
     f._scaleSlider = scaleSlider
 
     local alphaSlider = CreateFrame("Slider", "CoAATHUDAlphaSlider", f, "OptionsSliderTemplate")
-    alphaSlider:SetPoint("TOPLEFT", f, "TOPLEFT", 190, -263)
+    alphaSlider:SetPoint("TOPLEFT", f, "TOPLEFT", 190, -295)
     alphaSlider:SetWidth(150)
     alphaSlider:SetMinMaxValues(0.2, 1.0)
     alphaSlider:SetValueStep(0.05)
@@ -419,6 +430,7 @@ function CoAAT_SettingsFrame.OnOpen()
     _G["CoAATCdStripCB"]:SetChecked(CoAAT_DB and CoAAT_DB.showCooldowns ~= false)
     _G["CoAATHideBorderCB"]:SetChecked(CoAAT_DB and CoAAT_DB.hideDragBorder or false)
     _G["CoAATCursorHUDCB"]:SetChecked(CoAAT_DB and CoAAT_DB.showCursorHUD or false)
+    _G["CoAATCursorHUDOrientCB"]:SetChecked(CoAAT_DB and CoAAT_DB.cursorHUDOrientation == "horizontal")
 
     -- Sync sliders
     if f._scaleSlider then

@@ -227,11 +227,63 @@ function CoAAT_CursorHUD.Build(parent)
     end)
 
     f:Hide()
+    CoAAT_CursorHUD.ApplyLayout()
     CoAAT_CursorHUD.Refresh()
+end
+
+function CoAAT_CursorHUD.ApplyLayout()
+    if not _frame then return end
+
+    local orientation = CoAAT_DB and CoAAT_DB.cursorHUDOrientation or "vertical"
+
+    if orientation == "vertical" then
+        -- Vertical side-by-side right next to each other
+        _healthBar:ClearAllPoints()
+        _healthBar:SetSize(4, 30)
+        _healthBar:SetPoint("RIGHT", _frame, "CENTER", -2, 0)
+        _healthBar:SetOrientation("VERTICAL")
+
+        _mpBar:ClearAllPoints()
+        _mpBar:SetSize(4, 30)
+        _mpBar:SetPoint("LEFT", _frame, "CENTER", 2, 0)
+        _mpBar:SetOrientation("VERTICAL")
+
+        _castBar:ClearAllPoints()
+        _castBar:SetSize(30, 3)
+        _castBar:SetPoint("TOP", _frame, "BOTTOM", 0, -8)
+
+        -- Position buff icons above
+        for i = 1, 3 do
+            _buffs[i]:ClearAllPoints()
+            _buffs[i]:SetPoint("BOTTOM", _frame, "TOP", (i - 2) * 10, 8)
+        end
+    else
+        -- Horizontal stacked right next to each other
+        _healthBar:ClearAllPoints()
+        _healthBar:SetSize(36, 4)
+        _healthBar:SetPoint("BOTTOM", _frame, "CENTER", 0, 2)
+        _healthBar:SetOrientation("HORIZONTAL")
+
+        _mpBar:ClearAllPoints()
+        _mpBar:SetSize(36, 3)
+        _mpBar:SetPoint("TOP", _frame, "CENTER", 0, -2)
+        _mpBar:SetOrientation("HORIZONTAL")
+
+        _castBar:ClearAllPoints()
+        _castBar:SetSize(36, 3)
+        _castBar:SetPoint("TOP", _mpBar, "BOTTOM", 0, -3)
+
+        -- Position buff icons below
+        for i = 1, 3 do
+            _buffs[i]:ClearAllPoints()
+            _buffs[i]:SetPoint("TOP", _castBar, "BOTTOM", (i - 2) * 10, -4)
+        end
+    end
 end
 
 function CoAAT_CursorHUD.Refresh()
     if not _frame then return end
+    CoAAT_CursorHUD.ApplyLayout()
     if CoAAT_DB and CoAAT_DB.showCursorHUD then
         _frame:Show()
     else
