@@ -239,6 +239,15 @@ function CoAAT_SettingsFrame.Build()
         CoAAT_CombatHUD.RefreshLayout()
     end)
 
+    local nameplateCB = CreateFrame("CheckButton", "CoAATAttachNameplateCB", f, "UICheckButtonTemplate")
+    nameplateCB:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -234)
+    _G[nameplateCB:GetName() .. "Text"]:SetText("|cffddddddAttach to 3D Nameplate|r")
+    nameplateCB:SetChecked(CoAAT_DB and CoAAT_DB.attachToNameplate ~= false)
+    nameplateCB:SetScript("OnClick", function(self)
+        if CoAAT_DB then CoAAT_DB.attachToNameplate = self:GetChecked() end
+        CoAAT_CombatHUD.RefreshLayout()
+    end)
+
     -- Checkboxes: Col 2 (X = 190)
     local procAlertCB = CreateFrame("CheckButton", "CoAATShowProcAlertCB", f, "UICheckButtonTemplate")
     procAlertCB:SetPoint("TOPLEFT", f, "TOPLEFT", 190, -130)

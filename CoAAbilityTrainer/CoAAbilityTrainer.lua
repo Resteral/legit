@@ -68,6 +68,7 @@ local function InitDB()
     if CoAAT_DB.hideDragBorder   == nil then CoAAT_DB.hideDragBorder   = false end
     if CoAAT_DB.showCursorHUD    == nil then CoAAT_DB.showCursorHUD    = false end
     if CoAAT_DB.cursorHUDOrientation == nil then CoAAT_DB.cursorHUDOrientation = "vertical" end
+    if CoAAT_DB.attachToNameplate == nil then CoAAT_DB.attachToNameplate = true end
     if CoAAT_DB.positions        == nil then CoAAT_DB.positions        = {}    end
 end
 

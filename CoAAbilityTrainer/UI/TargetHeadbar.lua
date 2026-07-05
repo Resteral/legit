@@ -12,6 +12,25 @@ local _healthText = nil
 local _nameText = nil
 local _classifText = nil
 
+local function FindTargetNameplate()
+    if not UnitExists("target") then return nil end
+    local targetName = UnitName("target")
+    if not targetName then return nil end
+
+    local kids = { WorldFrame:GetChildren() }
+    for _, frame in ipairs(kids) do
+        if frame:IsShown() and not frame:GetName() then
+            local regions = { frame:GetRegions() }
+            for _, region in ipairs(regions) do
+                if region:GetObjectType() == "FontString" and region:GetText() == targetName then
+                    return frame
+                end
+            end
+        end
+    end
+    return nil
+end
+
 function CoAAT_TargetHeadbar.Build(parent)
     local f = CreateFrame("Frame", nil, parent)
     f:SetAllPoints(parent)
@@ -167,12 +186,32 @@ function CoAAT_TargetHeadbar.Build(parent)
         end
     end)
 
-    -- Animate the 3D model (make it rotate slowly!)
+    -- Animate the 3D model and handle nameplate snap attachment
     local rotPhase = 0
+    local timeSinceLast = 0
     _frame:SetScript("OnUpdate", function(self, dt)
         if UnitExists("target") and _model then
             rotPhase = rotPhase + dt * 0.4
             _model:SetRotation(rotPhase)
+        end
+
+        -- Snap position next to 3D Nameplate if target exists and option is enabled
+        timeSinceLast = timeSinceLast + dt
+        if timeSinceLast >= 0.05 then
+            timeSinceLast = 0
+            if CoAAT_DB and CoAAT_DB.attachToNameplate ~= false then
+                local np = FindTargetNameplate()
+                if np then
+                    self:ClearAllPoints()
+                    self:SetPoint("LEFT", np, "RIGHT", 15, 0)
+                else
+                    self:ClearAllPoints()
+                    self:SetAllPoints(parent)
+                end
+            else
+                self:ClearAllPoints()
+                self:SetAllPoints(parent)
+            end
         end
     end)
 
