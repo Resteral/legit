@@ -19,13 +19,13 @@ function CoAAT_TargetHeadbar.Build(parent)
     -- Glassmorphic BG
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetTexture(0.02, 0.02, 0.05, 0.85)
+    bg:SetTexture(0.03, 0.05, 0.12, 0.88)
 
-    -- Thin border
+    -- Accent side border (Left side)
     local border = f:CreateTexture(nil, "OVERLAY")
-    border:SetSize(parent:GetWidth(), 2)
+    border:SetSize(4, parent:GetHeight())
     border:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    border:SetTexture(0.0, 0.75, 1.0, 0.25)
+    border:SetTexture(1.0, 0.2, 0.2, 0.8) -- Default Hostile Red
     f._border = border
 
     -- 3D Model frame
@@ -148,7 +148,32 @@ function CoAAT_TargetHeadbar.UpdateTarget()
     local name = UnitName("target") or "Unknown"
     local level = UnitLevel("target") or 0
     if level == -1 then level = "??" end
-    _nameText:SetText(string.format("%s (Lvl %s)", name, level))
+
+    local borderR, borderG, borderB = 0, 0.75, 1.0
+    if UnitIsPlayer("target") then
+        local _, classFilename = UnitClass("target")
+        local classColorHex = "ffffff"
+        if classFilename and RAID_CLASS_COLORS[classFilename] then
+            local c = RAID_CLASS_COLORS[classFilename]
+            borderR, borderG, borderB = c.r, c.g, c.b
+            classColorHex = c.colorStr
+        end
+        local race = UnitRace("target") or ""
+        _nameText:SetText(string.format("%s |c%s[%s]|r (Lvl %s)", name, classColorHex, race, level))
+    else
+        local reaction = UnitReaction("target", "player")
+        if reaction then
+            if reaction <= 3 then
+                borderR, borderG, borderB = 1.0, 0.2, 0.2
+            elseif reaction == 4 then
+                borderR, borderG, borderB = 1.0, 0.8, 0.0
+            else
+                borderR, borderG, borderB = 0.2, 0.8, 0.4
+            end
+        end
+        _nameText:SetText(string.format("%s (Lvl %s)", name, level))
+    end
+    _frame._border:SetTexture(borderR, borderG, borderB, 0.8)
 
     -- Set Classification
     local classif = UnitClassification("target")
