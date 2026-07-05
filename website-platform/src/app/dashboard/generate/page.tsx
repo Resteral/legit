@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Loader2, Sparkles, Palette, Globe, CheckSquare, Square, Building2, HelpCircle, Terminal } from "lucide-react";
+import { 
+  Wand2, Loader2, Sparkles, Palette, Globe, CheckSquare, Square, 
+  Building2, HelpCircle, Terminal, Monitor, Smartphone, RefreshCw
+} from "lucide-react";
 import Link from "next/link";
 import { saveGeneratedSite } from "./actions";
 
@@ -20,6 +23,13 @@ const AVAILABLE_FEATURES = [
   "Live Customer Chat Support"
 ];
 
+interface GeneratedSite {
+  id: string;
+  name: string;
+  url: string;
+  html_content: string;
+}
+
 export default function GenerateSite() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,6 +42,11 @@ export default function GenerateSite() {
   const [colorScheme, setColorScheme] = useState("Clean Minimalist Dark");
   const [location, setLocation] = useState("");
   const [features, setFeatures] = useState<string[]>([]);
+
+  // Generated Site details
+  const [generatedSite, setGeneratedSite] = useState<GeneratedSite | null>(null);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [iframeKey, setIframeKey] = useState(0);
 
   // Simulated Live Bot Builder Terminal logs
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
@@ -69,6 +84,7 @@ export default function GenerateSite() {
     setIsGenerating(true);
     setTerminalLogs([]);
     setLogIndex(0);
+    setGeneratedSite(null);
 
     // Call server action to save the site
     const result = await saveGeneratedSite(
@@ -87,6 +103,8 @@ export default function GenerateSite() {
       return;
     }
 
+    setGeneratedSite(result.site);
+
     // Keep displaying the builder logs until finished
     const finishInterval = setInterval(() => {
       setTerminalLogs((prev) => {
@@ -96,7 +114,7 @@ export default function GenerateSite() {
           clearInterval(finishInterval);
           setTimeout(() => {
             setIsGenerating(false);
-            setStep(3); // Go to preview page
+            setStep(5); // Go to preview page
           }, 800);
           return prev;
         }
@@ -110,16 +128,22 @@ export default function GenerateSite() {
     );
   };
 
+  const reloadIframe = () => {
+    setIframeKey(prev => prev + 1);
+  };
+
   return (
-    <div className="p-8 max-w-5xl mx-auto min-h-screen">
-      <header className="mb-10 text-center max-w-2xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">
-          AI Website Generator
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Complete our in-depth configuration questionnaire to let the bot construct a custom landing page.
-        </p>
-      </header>
+    <div className="p-8 max-w-6xl mx-auto min-h-screen">
+      {step < 5 && (
+        <header className="mb-10 text-center max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">
+            AI Website Generator
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Complete our in-depth configuration questionnaire to let the bot construct a custom landing page.
+          </p>
+        </header>
+      )}
 
       <div className="relative">
         <AnimatePresence mode="wait">
@@ -369,7 +393,7 @@ export default function GenerateSite() {
                     </div>
                   </div>
 
-                  <div className="bg-[#0b0f19] rounded-2xl p-5 font-mono text-xs text-green-400 border border-border/40 min-h-[220px] max-h-[300px] overflow-y-auto space-y-2.5">
+                  <div className="bg-[#0b0f19] rounded-2xl p-5 font-mono text-xs text-green-400 border border-border/40 min-h-[220px] max-h-[300px] overflow-y-auto space-y-2.5 font-semibold">
                     {terminalLogs.map((log, index) => (
                       <motion.div
                         key={index}
@@ -390,55 +414,99 @@ export default function GenerateSite() {
             </motion.div>
           )}
 
-          {/* STEP 5: Success Preview */}
-          {step === 5 && (
+          {/* STEP 5: Success Preview (Full high-fidelity rendering) */}
+          {step === 5 && generatedSite && (
             <motion.div
               key="step5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="max-w-6xl mx-auto"
+              className="space-y-6"
             >
-              {/* Preview View is now step 5 */}
-              <div className="flex items-center justify-between mb-6">
+              {/* Header Details */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-secondary/10 border border-border/50 rounded-3xl p-6">
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Sparkles className="text-primary w-6 h-6" /> Site Generated Successfully!
+                    <Sparkles className="text-primary w-6 h-6 animate-pulse" /> Site Generated Successfully!
                   </h2>
-                  <p className="text-muted-foreground text-sm mt-1">Review your generated site before publishing.</p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Your page is fully compiled and hosted under the domain: <strong className="text-primary">{generatedSite.url}</strong>
+                  </p>
                 </div>
-                <div className="flex gap-3">
-                  <Link href="/dashboard" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                <div className="flex items-center gap-3 shrink-0">
+                  <button 
+                    onClick={reloadIframe}
+                    className="p-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-xl text-xs font-bold text-gray-300 hover:text-white transition-all flex items-center gap-1.5"
+                    title="Reload Preview Frame"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reload
+                  </button>
+                  <Link href="/dashboard" className="px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/95 transition-all flex items-center gap-1.5 shadow-lg shadow-primary/10">
                     <Globe className="w-4 h-4" /> Go to Dashboard
                   </Link>
                 </div>
               </div>
 
-              {/* Mock Preview Window */}
-              <div className="rounded-xl border border-border/50 bg-secondary/10 overflow-hidden shadow-2xl">
-                {/* Browser Chrome */}
-                <div className="bg-secondary/50 px-4 py-3 flex items-center gap-2 border-b border-border/50">
-                  <div className="flex gap-1.5">
+              {/* Viewport Width Control Bar */}
+              <div className="flex justify-between items-center bg-[#0e1422]/60 border border-border/40 rounded-2xl px-6 py-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Preview Mode</span>
+                  <div className="flex gap-1.5 bg-black/35 p-1 rounded-xl border border-border/30">
+                    <button
+                      onClick={() => setPreviewMode('desktop')}
+                      className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition-all ${
+                        previewMode === 'desktop' ? 'bg-primary text-white shadow' : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Monitor className="w-3.5 h-3.5" /> Desktop
+                    </button>
+                    <button
+                      onClick={() => setPreviewMode('mobile')}
+                      className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition-all ${
+                        previewMode === 'mobile' ? 'bg-primary text-white shadow' : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" /> Mobile
+                    </button>
+                  </div>
+                </div>
+                
+                <span className="text-[10px] text-gray-500 font-mono hidden md:inline">
+                  Viewport: {previewMode === 'desktop' ? '100% (Responsive)' : '375px x 680px'}
+                </span>
+              </div>
+
+              {/* High-Fidelity Browser Mockup containing the real generated HTML */}
+              <div className="rounded-3xl border border-border/50 bg-[#0e1422]/60 overflow-hidden shadow-2xl flex flex-col">
+                {/* Browser Toolbar Chrome */}
+                <div className="bg-secondary/40 px-4 py-3 flex items-center justify-between border-b border-border/50 text-xs text-muted-foreground select-none">
+                  <div className="flex gap-1.5 shrink-0">
                     <div className="w-3 h-3 rounded-full bg-red-500/80" />
                     <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   </div>
-                  <div className="mx-auto bg-background/50 rounded-md px-32 py-1 text-xs text-muted-foreground flex items-center gap-2">
-                    {businessName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}.resolve.bet
+                  
+                  <div className="bg-black/35 rounded-lg px-24 py-1.5 text-center truncate max-w-md mx-auto font-mono text-[10px] text-gray-300 border border-border/30">
+                    {generatedSite.url}
                   </div>
+
+                  <div className="w-12 shrink-0" />
                 </div>
                 
-                {/* Simulated Content */}
-                <div className="bg-background min-h-[600px] flex flex-col p-12 text-center items-center justify-center space-y-6">
-                  <h1 className="text-4xl font-extrabold">{businessName}</h1>
-                  <p className="text-muted-foreground max-w-md">{prompt}</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {features.map(f => (
-                      <span key={f} className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-xs rounded-full font-semibold">
-                        ✓ {f}
-                      </span>
-                    ))}
+                {/* Iframe Viewport Container */}
+                <div className="bg-slate-900 p-6 flex justify-center min-h-[600px] items-start transition-all duration-300">
+                  <div 
+                    className={`w-full bg-white rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 ${
+                      previewMode === 'mobile' ? 'max-w-[375px] h-[680px]' : 'max-w-full h-[650px]'
+                    }`}
+                  >
+                    <iframe 
+                      key={iframeKey}
+                      srcDoc={generatedSite.html_content} 
+                      className="w-full h-full border-0" 
+                      title="Generated Website Preview"
+                    />
                   </div>
-                  <p className="text-xs text-gray-500">Theme Palette applied: {colorScheme}</p>
                 </div>
               </div>
             </motion.div>

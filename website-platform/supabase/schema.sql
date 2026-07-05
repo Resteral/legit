@@ -338,3 +338,20 @@ CREATE POLICY "Anyone can insert tug lobbies" ON public.tug_lobbies FOR INSERT W
 
 -- Insert a default lobby if not exists
 INSERT INTO public.tug_lobbies (id, name, position) VALUES ('00000000-0000-0000-0000-000000000000', 'Tug Arena', 0) ON CONFLICT (id) DO NOTHING;
+
+-- PHASE 17: REFERRAL LOOP
+CREATE TABLE IF NOT EXISTS public.referrals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  referrer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  referred_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  referred_email TEXT NOT NULL,
+  status TEXT DEFAULT 'converted',
+  reward_credits INTEGER DEFAULT 5,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(referred_user_id)
+);
+
+ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can insert referrals" ON public.referrals FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can select referrals" ON public.referrals FOR SELECT USING (true);

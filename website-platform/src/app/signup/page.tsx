@@ -2,7 +2,7 @@ import { signup } from '@/app/login/actions'
 import Link from 'next/link'
 import { Bot, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 
-export default function SignupPage({ searchParams }: { searchParams: { error?: string, message?: string } }) {
+export default function SignupPage({ searchParams }: { searchParams: { error?: string, message?: string, ref?: string } }) {
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
@@ -37,6 +37,7 @@ export default function SignupPage({ searchParams }: { searchParams: { error?: s
           )}
 
           <form className="space-y-6" action={signup}>
+            <input type="hidden" name="ref" value={searchParams?.ref || ''} />
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">
                 Email address

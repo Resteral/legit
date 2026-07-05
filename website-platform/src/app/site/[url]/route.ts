@@ -16,7 +16,7 @@ export async function GET(
   // Find the site by URL
   const { data: site, error } = await supabase
     .from('sites')
-    .select('id, html_content, status')
+    .select('id, user_id, html_content, status')
     .eq('url', url)
     .single();
 
@@ -38,35 +38,37 @@ export async function GET(
       <body class="bg-gray-50 flex items-center justify-center min-h-screen font-sans">
         <div class="text-center p-8 max-w-lg bg-white shadow-xl rounded-2xl border border-gray-100">
           <div class="text-blue-500 mb-4 flex justify-center">
-            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+            <svg class="w-16 h-16 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">Site is generating...</h1>
-          <p class="text-gray-500">This is a placeholder for a site generated before the Live AI update. Please generate a new site in the dashboard to see the AI output!</p>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">This site is being built</h1>
+          <p class="text-gray-600 mb-6">Our AI builder is compiling page elements and styles. Please check back in a few seconds!</p>
         </div>
       </body>
       </html>
     `;
-    return new NextResponse(fallbackHtml, {
-      status: 200,
-      headers: { 'Content-Type': 'text/html' },
-    });
+    return new NextResponse(fallbackHtml, { status: 200, headers: { 'Content-Type': 'text/html' } });
   }
 
-  // Inject our support chat widget iframe
+  // Embed Live chat support widget iframe automatically (Phase 12)
   const embedCode = `
-    <div id="resolve-support-root"></div>
+    <!-- Live Support Chat widget iframe -->
     <script>
       (function() {
-        var container = document.getElementById('resolve-support-root');
+        var container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '99999';
+        container.style.transition = 'all 0.3s ease';
+        document.body.appendChild(container);
+
         var iframe = document.createElement('iframe');
-        iframe.src = window.location.origin + '/support/embed?site_id=${site.id}';
-        iframe.style.position = 'fixed';
-        iframe.style.bottom = '20px';
-        iframe.style.right = '20px';
+        iframe.src = 'https://resolve.bet/support/embed?siteId=${site.id}';
         iframe.style.width = '65px';
         iframe.style.height = '65px';
-        iframe.style.border = 'none';
-        iframe.style.zIndex = '999999';
+        iframe.style.border = '0';
         iframe.style.background = 'transparent';
         iframe.style.transition = 'all 0.3s ease';
         container.appendChild(iframe);
@@ -82,6 +84,12 @@ export async function GET(
         });
       })();
     </script>
+
+    <!-- Powered by Resolve.bet Referral Badge -->
+    <a href="https://resolve.bet/signup?ref=${site.user_id}" target="_blank" style="position: fixed; bottom: 20px; left: 20px; z-index: 99999; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); padding: 10px 14px; border-radius: 12px; font-family: sans-serif; font-size: 11px; font-weight: 600; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); backdrop-filter: blur(8px); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      <span style="display: inline-block; width: 8px; height: 8px; background: #6366f1; border-radius: 50%;"></span>
+      Powered by Resolve.bet
+    </a>
   `;
 
   let finalHtml = site.html_content;
