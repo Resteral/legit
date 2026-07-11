@@ -42,6 +42,26 @@ function CoAAT_CombatHUD.Build()
     dragBG:SetAlpha(0)
     hud._dragBG = dragBG
 
+    -- Class skin background texture
+    local classBG = hud:CreateTexture(nil, "BACKGROUND", nil, -2)
+    classBG:SetPoint("CENTER", hud, "CENTER", 0, 0)
+    classBG:SetSize(HUD_W + 80, 360)
+    classBG:Hide()
+    hud._classBG = classBG
+
+    -- Left/Right wing ornaments
+    local leftWing = hud:CreateTexture(nil, "BACKGROUND", nil, -1)
+    leftWing:SetSize(90, 180)
+    leftWing:SetPoint("RIGHT", hud, "LEFT", 10, 0)
+    leftWing:Hide()
+    hud._leftWing = leftWing
+
+    local rightWing = hud:CreateTexture(nil, "BACKGROUND", nil, -1)
+    rightWing:SetSize(90, 180)
+    rightWing:SetPoint("LEFT", hud, "RIGHT", -10, 0)
+    rightWing:Hide()
+    hud._rightWing = rightWing
+
     -- Transparent container frame for dragging
     local border = CreateFrame("Frame", nil, hud)
     border:SetAllPoints()
@@ -327,6 +347,47 @@ end
 function CoAAT_CombatHUD.ApplyTheme(r, g, b, hex)
     if CoAAT_ResourceBar and CoAAT_ResourceBar.ApplyTheme then
         CoAAT_ResourceBar.ApplyTheme(r, g, b, hex)
+    end
+
+    local hud = _hud
+    if not hud then return end
+
+    local classId = CoAAT_Engine and CoAAT_Engine.classId or "general"
+
+    if hud._classBG and hud._leftWing and hud._rightWing then
+        if classId == "reaper" then
+            hud._classBG:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reaperui")
+            hud._classBG:SetVertexColor(1, 1, 1, 0.85)
+            hud._classBG:Show()
+
+            hud._leftWing:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reaperwing")
+            hud._leftWing:SetTexCoord(0, 1, 0, 1) -- normal
+            hud._leftWing:SetVertexColor(1, 1, 1, 0.85)
+            hud._leftWing:Show()
+
+            hud._rightWing:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reaperwing")
+            hud._rightWing:SetTexCoord(1, 0, 0, 1) -- flipped
+            hud._rightWing:SetVertexColor(1, 1, 1, 0.85)
+            hud._rightWing:Show()
+        elseif classId == "felsworn" then
+            hud._classBG:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Felui")
+            hud._classBG:SetVertexColor(1, 1, 1, 0.85)
+            hud._classBG:Show()
+
+            hud._leftWing:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Felwing")
+            hud._leftWing:SetTexCoord(0, 1, 0, 1)
+            hud._leftWing:SetVertexColor(1, 1, 1, 0.85)
+            hud._leftWing:Show()
+
+            hud._rightWing:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Felwing")
+            hud._rightWing:SetTexCoord(1, 0, 0, 1)
+            hud._rightWing:SetVertexColor(1, 1, 1, 0.85)
+            hud._rightWing:Show()
+        else
+            hud._classBG:Hide()
+            hud._leftWing:Hide()
+            hud._rightWing:Hide()
+        end
     end
 end
 

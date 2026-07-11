@@ -112,6 +112,20 @@ function CoAAT_ResourceBar.Build(parent, posX, posY)
         f._segments[i] = seg
     end
 
+    -- Class skin crystals (WeakAuras-style collected soul shard nodes)
+    f._crystals = {}
+    local crystalW, crystalH = 26, 32
+    local startOffset = -((5 - 1) * 28) / 2
+    for i = 1, 5 do
+        local cry = f:CreateTexture(nil, "OVERLAY")
+        cry:SetSize(crystalW, crystalH)
+        cry:SetPoint("BOTTOM", f, "TOP", startOffset + (i - 1) * 28, -2)
+        cry:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reapercrystal")
+        cry:SetVertexColor(1, 1, 1, 1)
+        cry:Hide()
+        f._crystals[i] = cry
+    end
+
     -- Animation tick
     f._animPhase = 0
     f:SetScript("OnUpdate", function(self, dt)
@@ -149,9 +163,61 @@ function CoAAT_ResourceBar.Update(current, maxVal, color)
 
     f._fill:SetWidth(w)
 
-    if color then
-        f._fill:SetTexture(color.r, color.g, color.b, 0.95)
-        f._spendFlash:SetTextColor(color.r, color.g, color.b)
+    local classId = CoAAT_Engine and CoAAT_Engine.classId or "general"
+    local useCrystals = (classId == "reaper" or classId == "felsworn")
+
+    if classId == "reaper" then
+        f._fill:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reaperbar")
+        f._fill:SetVertexColor(1, 1, 1, 0.95)
+        if color then
+            f._spendFlash:SetTextColor(color.r, color.g, color.b)
+        end
+    elseif classId == "felsworn" then
+        f._fill:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Felbar")
+        f._fill:SetVertexColor(1, 1, 1, 0.95)
+        if color then
+            f._spendFlash:SetTextColor(color.r, color.g, color.b)
+        end
+    else
+        if color then
+            f._fill:SetTexture(color.r, color.g, color.b, 0.95)
+            f._fill:SetVertexColor(1, 1, 1, 1)
+            f._spendFlash:SetTextColor(color.r, color.g, color.b)
+        end
+    end
+
+    -- Update floating crystals
+    local activeCrystals = 0
+    if maxVal > 0 then
+        if maxVal <= 5 then
+            activeCrystals = current
+        else
+            activeCrystals = math.floor(current / (maxVal / 5))
+        end
+    end
+
+    for i = 1, 5 do
+        local cry = f._crystals[i]
+        if cry then
+            if useCrystals then
+                if classId == "reaper" then
+                    cry:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Reapercrystal")
+                else
+                    cry:SetTexture("Interface\\AddOns\\COAlAbilityTrainer\\Icons\\Crystal")
+                end
+
+                if activeCrystals >= i then
+                    cry:SetAlpha(1.0)
+                    cry:SetVertexColor(1, 1, 1, 1)
+                else
+                    cry:SetAlpha(0.15)
+                    cry:SetVertexColor(0.4, 0.4, 0.4, 0.3)
+                end
+                cry:Show()
+            else
+                cry:Hide()
+            end
+        end
     end
 
     -- Value text
