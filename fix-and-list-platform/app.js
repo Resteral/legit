@@ -117,8 +117,10 @@ const MOCK_COMPS = [
 ];
 
 let leads = [];
-let prospects = [...MOCK_PROSPECTS];
+let comps = [];
+let prospects = [];
 let contractors = [];
+let adCampaigns = [];
 let emailLogs = [];
 let emailSettings = { autoIntake: true, autoRehab: true, autoContract: true };
 let currentSelectedLeadId = null;
@@ -221,6 +223,36 @@ document.addEventListener('DOMContentLoaded', () => {
         saveContractorsToStorage();
     }
 
+    // Load Comps
+    const savedComps = localStorage.getItem('revitalize_comps');
+    if (savedComps) {
+        comps = JSON.parse(savedComps);
+    } else {
+        comps = [...MOCK_COMPS];
+        saveCompsToStorage();
+    }
+
+    // Load Prospects
+    const savedProspects = localStorage.getItem('revitalize_prospects');
+    if (savedProspects) {
+        prospects = JSON.parse(savedProspects);
+    } else {
+        prospects = [...MOCK_PROSPECTS];
+        saveProspectsToStorage();
+    }
+
+    // Load Ad Campaigns
+    const savedAdCampaigns = localStorage.getItem('revitalize_ad_campaigns');
+    if (savedAdCampaigns) {
+        adCampaigns = JSON.parse(savedAdCampaigns);
+    } else {
+        adCampaigns = [
+            { id: 'ad-default-1', property: '882 Whispering Pines Dr', channel: 'instagram', budget: 50, impressions: 1420, clicks: 180, leads: 3 },
+            { id: 'ad-default-2', property: '104 Garrison Lane', channel: 'facebook', budget: 25, impressions: 840, clicks: 92, leads: 1 }
+        ];
+        saveAdCampaignsToStorage();
+    }
+
     // Load Email Settings & Logs
     const savedEmailSettings = localStorage.getItem('revitalize_email_settings');
     if (savedEmailSettings) emailSettings = JSON.parse(savedEmailSettings);
@@ -253,9 +285,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboardStats();
 });
 
-// Save hooks
 function saveLeadsToStorage() { localStorage.setItem('revitalize_leads', JSON.stringify(leads)); }
 function saveContractorsToStorage() { localStorage.setItem('revitalize_contractors', JSON.stringify(contractors)); }
+function saveCompsToStorage() { localStorage.setItem('revitalize_comps', JSON.stringify(comps)); }
+function saveProspectsToStorage() { localStorage.setItem('revitalize_prospects', JSON.stringify(prospects)); }
+function saveAdCampaignsToStorage() { localStorage.setItem('revitalize_ad_campaigns', JSON.stringify(adCampaigns)); }
 function saveEmailSettings() {
     emailSettings.autoIntake = document.getElementById('chk-auto-intake').checked;
     emailSettings.autoRehab = document.getElementById('chk-auto-rehab').checked;
@@ -2154,7 +2188,7 @@ function renderSellerFlyer() {
 
     // Render Comps Table inside flyer
     let compsTableHtml = '';
-    const selectedCompsList = (lead.selectedComps || []).map(id => MOCK_COMPS.find(c => c.id === id)).filter(Boolean);
+    const selectedCompsList = (lead.selectedComps || []).map(id => comps.find(c => c.id === id)).filter(Boolean);
 
     if (selectedCompsList.length > 0) {
         compsTableHtml = `
@@ -2522,7 +2556,7 @@ function renderCompsChecklist(lead) {
     if (!container) return;
     container.innerHTML = '';
 
-    MOCK_COMPS.forEach(comp => {
+    comps.forEach(comp => {
         const isSelected = lead.selectedComps.includes(comp.id);
         const div = document.createElement('div');
         div.className = `comp-check-item ${isSelected ? 'selected' : ''}`;
@@ -2636,7 +2670,7 @@ function renderCompsRadarMap(lead) {
     svg.appendChild(centerGroup);
 
     // Render Comparable closed sales pins
-    MOCK_COMPS.forEach(comp => {
+    comps.forEach(comp => {
         const isSelected = lead.selectedComps.includes(comp.id);
         const pinGroup = document.createElementNS(svgNS, "g");
         pinGroup.setAttribute("class", "radar-map-pin");
@@ -3430,3 +3464,248 @@ function triggerOutboundCampaignEmail() {
     showToast("Marketing drip campaign email dispatched successfully!");
     renderEmailLogs();
 }
+
+function populateAdLeadSelect() {
+    const select = document.getElementById('ad-lead-select');
+    if (!select) return;
+    select.innerHTML = '';
+
+    if (leads.length === 0) {
+        select.innerHTML = `<option value="">No properties active</option>`;
+        return;
+    }
+
+    leads.forEach(lead => {
+        const option = document.createElement('option');
+        option.value = lead.id;
+        option.innerText = `${lead.address} (${lead.name})`;
+        select.appendChild(option);
+    });
+}
+
+function handleAddComp(event) {
+    event.preventDefault();
+    const address = document.getElementById('comp-address').value;
+    const price = parseInt(document.getElementById('comp-price').value);
+    const beds = parseInt(document.getElementById('comp-beds').value);
+    const baths = parseFloat(document.getElementById('comp-baths').value);
+    const xOffset = parseFloat(document.getElementById('comp-x').value);
+    const yOffset = parseFloat(document.getElementById('comp-y').value);
+
+    const xCoord = 110 + xOffset;
+    const yCoord = 100 + yOffset;
+
+    const newComp = {
+        id: `comp-custom-${Date.now()}`,
+        address: address,
+        price: price,
+        beds: beds,
+        baths: baths,
+        sqft: 2200,
+        rehab: 'Custom comparable addition',
+        dom: 5,
+        x: xCoord,
+        y: yCoord
+    };
+
+    comps.push(newComp);
+    saveCompsToStorage();
+
+    document.getElementById('add-comp-form').reset();
+    showToast(`Comparable pin dropped at ${address}!`);
+    
+    const lead = leads.find(l => l.id === currentSelectedLeadId) || leads[0];
+    if (lead) {
+        renderCompsChecklist(lead);
+        renderCompsRadarMap(lead);
+    }
+}
+
+function purgeDemoDatabase() {
+    if (confirm("Are you sure you want to purge all demo data? This will clear all listings, campaigns, and logs and start fresh with blank forms for real data!")) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+function renderAdCampaigns() {
+    const list = document.getElementById('ad-campaigns-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (adCampaigns.length === 0) {
+        list.innerHTML = `<tr><td colspan="5" style="padding:1rem; text-align:center; color:var(--text-muted);">No active marketing campaigns.</td></tr>`;
+        return;
+    }
+
+    adCampaigns.forEach(ad => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        tr.innerHTML = `
+            <td style="padding:0.6rem; display:flex; align-items:center; gap:4px; text-transform:capitalize;">
+                <i data-lucide="${ad.channel === 'google' ? 'search' : ad.channel}" style="width:12px; height:12px; color:var(--primary);"></i>
+                <span>${ad.channel}</span>
+            </td>
+            <td style="padding:0.6rem;">$${ad.budget}/day</td>
+            <td style="padding:0.6rem; text-align:right; font-weight:700;">${ad.impressions.toLocaleString()}</td>
+            <td style="padding:0.6rem; text-align:right; font-weight:700;">${ad.clicks.toLocaleString()}</td>
+            <td style="padding:0.6rem; text-align:right; font-weight:700; color:var(--success);">${ad.leads}</td>
+        `;
+        list.appendChild(tr);
+    });
+
+    lucide.createIcons();
+}
+
+function updateAdPreview() {
+    const leadSelect = document.getElementById('ad-lead-select');
+    if (!leadSelect) return;
+    const leadId = leadSelect.value;
+    const channel = document.getElementById('ad-channel-select').value;
+    const budget = document.getElementById('ad-budget-range').value;
+    const headline = document.getElementById('ad-headline-input').value.trim();
+
+    document.getElementById('ad-budget-label').innerText = `$${budget}/day`;
+
+    const lead = leads.find(l => l.id === leadId);
+    const addr = lead ? lead.address : "882 Whispering Pines Dr";
+    const textCopy = headline || `🚨 Unlocking equity at ${addr}! We fund 100% of renovations upfront. Zero out of pocket, pay only at closing. Swipe up to claim your free evaluation.`;
+
+    const viewport = document.getElementById('ad-mockup-viewport');
+    if (!viewport) return;
+
+    if (channel === 'instagram') {
+        viewport.innerHTML = `
+            <div class="instagram-post" style="width:100%; max-width:240px; background:#121212; border:1px solid #262626; border-radius:8px; font-family:system-ui; overflow:hidden;">
+                <div style="display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid #262626;">
+                    <div style="width:24px; height:24px; border-radius:50%; background:var(--primary); display:flex; justify-content:center; align-items:center; font-size:10px; font-weight:800; color:white;">R</div>
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:white; line-height:1.2;">revitalizerealty</div>
+                        <div style="font-size:8px; color:#a8a8a8; line-height:1;">Sponsored</div>
+                    </div>
+                </div>
+                <div style="height:140px; background:linear-gradient(45deg, #1d2d5a, #0b1329); display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1rem; text-align:center; position:relative;">
+                    <i data-lucide="home" style="width:32px; height:32px; color:var(--primary); margin-bottom:0.5rem;"></i>
+                    <div style="font-size:10px; font-weight:800; color:white;">${addr}</div>
+                    <div style="font-size:8px; color:var(--success); font-weight:700; margin-top:2px;">Renovated to Sell</div>
+                </div>
+                <div style="background:#262626; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:9px; font-weight:700; color:#3897f0;">Learn More</span>
+                    <i data-lucide="chevron-right" style="width:12px; height:12px; color:#3897f0;"></i>
+                </div>
+                <div style="padding:8px; font-size:9px; color:white; line-height:1.3;">
+                    <span style="font-weight:700; margin-right:4px;">revitalizerealty</span>${textCopy}
+                </div>
+            </div>
+        `;
+    } else if (channel === 'facebook') {
+        viewport.innerHTML = `
+            <div class="facebook-post" style="width:100%; max-width:260px; background:#18191a; border:1px solid #3e4042; border-radius:8px; font-family:system-ui; padding:10px; overflow:hidden;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:var(--primary); display:flex; justify-content:center; align-items:center; font-size:11px; font-weight:800; color:white;">R</div>
+                    <div>
+                        <div style="font-size:10px; font-weight:700; color:white; line-height:1.2;">Revitalize Realty</div>
+                        <div style="font-size:8px; color:#b0b3b8; display:flex; align-items:center; gap:2px;"><span style="line-height:1;">Sponsored</span> • <i data-lucide="globe" style="width:8px; height:8px;"></i></div>
+                    </div>
+                </div>
+                <div style="font-size:9px; color:white; line-height:1.3; margin-bottom:8px;">${textCopy}</div>
+                <div style="border:1px solid #3e4042; border-radius:6px; overflow:hidden;">
+                    <div style="height:120px; background:linear-gradient(45deg, #05261e, #0d4638); display:flex; justify-content:center; align-items:center;">
+                        <i data-lucide="sparkles" style="width:32px; height:32px; color:var(--success);"></i>
+                    </div>
+                    <div style="background:#242526; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:7px; color:#b0b3b8; text-transform:uppercase;">REVITALIZE.APP</div>
+                            <div style="font-size:9px; font-weight:700; color:white; margin-top:2px;">Get upfront remodel funding</div>
+                        </div>
+                        <span style="background:#3a3b3c; color:white; font-size:8px; font-weight:700; padding:4px 8px; border-radius:4px;">Learn More</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        viewport.innerHTML = `
+            <div class="google-ad" style="width:100%; max-width:280px; background:#1a1a1a; border:1px solid #333; border-radius:6px; font-family:system-ui; padding:10px;">
+                <div style="font-size:8px; color:#bdc1c6; display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+                    <span style="background:#f9ab00; color:black; font-weight:900; padding:1px 3px; border-radius:2px; font-size:6px;">Ad</span>
+                    <span>https://www.revitalize.realty/free-rehab</span>
+                </div>
+                <h4 style="font-size:11px; color:#8ab4f8; font-weight:500; margin-bottom:4px; line-height:1.2;">Can't Sell Your Home at ${addr}? Let Us Fund Renovations Upfront</h4>
+                <p style="font-size:9px; color:#bdc1c6; line-height:1.3;">${textCopy}</p>
+            </div>
+        `;
+    }
+
+    lucide.createIcons();
+}
+
+function publishAdCampaign() {
+    const leadSelect = document.getElementById('ad-lead-select');
+    if (!leadSelect) return;
+    const leadId = leadSelect.value;
+    const channel = document.getElementById('ad-channel-select').value;
+    const budget = parseInt(document.getElementById('ad-budget-range').value);
+
+    const lead = leads.find(l => l.id === leadId);
+    const addr = lead ? lead.address : "General Outreach";
+
+    const newAd = {
+        id: 'ad-' + Date.now(),
+        property: addr,
+        channel: channel,
+        budget: budget,
+        impressions: 0,
+        clicks: 0,
+        leads: 0
+    };
+
+    adCampaigns.unshift(newAd);
+    saveAdCampaignsToStorage();
+    renderAdCampaigns();
+
+    showToast(`Ad campaign successfully deployed on ${channel}!`);
+}
+
+// Start analytics simulation
+setInterval(() => {
+    if (adCampaigns.length > 0) {
+        adCampaigns.forEach(ad => {
+            const multiplier = ad.budget / 50;
+            const newImpressions = Math.floor(Math.random() * 15 * multiplier);
+            ad.impressions += newImpressions;
+            
+            if (newImpressions > 0 && Math.random() > 0.6) {
+                const newClicks = Math.floor(Math.random() * 3 * multiplier);
+                ad.clicks += newClicks;
+                
+                if (newClicks > 0 && Math.random() > 0.85) {
+                    ad.leads += 1;
+                    showToast(`New campaign lead captured from ${ad.channel} ads!`);
+                    
+                    const firstNames = ['Sarah', 'David', 'Jessica', 'Michael', 'Emily', 'Robert'];
+                    const lastNames = ['Miller', 'Johnson', 'Smith', 'Williams', 'Brown', 'Davis'];
+                    const chosenName = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+                    const customId = `prospect-ad-${Date.now()}`;
+                    
+                    const newProspect = {
+                        id: customId,
+                        name: chosenName,
+                        address: `${Math.floor(100 + Math.random() * 800)} Oak Ridge Rd`,
+                        phone: `(555) ${Math.floor(100+Math.random()*900)}-${Math.floor(1000+Math.random()*9000)}`,
+                        email: `${chosenName.toLowerCase().replace(' ', '.')}@homemail.com`,
+                        notes: `Generated via active ${ad.channel} campaign for ${ad.property}. Needs cosmetic bathroom updates.`,
+                        hotLevel: 'hot',
+                        coords: { x: 20 + Math.random()*60, y: 20 + Math.random()*60 }
+                    };
+                    prospects.unshift(newProspect);
+                    saveProspectsToStorage();
+                    renderMockMap();
+                    renderProspectsList();
+                }
+            }
+        });
+        saveAdCampaignsToStorage();
+        renderAdCampaigns();
+        updateDashboardStats();
+    }
+}, 8000);

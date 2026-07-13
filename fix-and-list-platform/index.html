@@ -379,7 +379,11 @@
                     <h1>Agent & Rehab Pipeline</h1>
                     <p>Track listings, manage property renovations, and dispatch contracts.</p>
                 </div>
-                <div class="stats-ribbon">
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <button class="btn-secondary" onclick="purgeDemoDatabase()" style="font-size:0.75rem; padding:0.4rem 0.8rem; border-color:var(--danger); color:var(--danger); display:flex; align-items:center; gap:4px;">
+                        <i data-lucide="trash-2" style="width:12px; height:12px;"></i> Purge Demo Database
+                    </button>
+                    <div class="stats-ribbon">
                     <div class="stat-pill">
                         <span class="label">Active Leads</span>
                         <span class="value" id="stat-active-leads">0</span>
@@ -405,8 +409,8 @@
                 <button class="dash-tab" id="tab-btn-contractors" onclick="switchDashSubTab('contractors')">
                     <i data-lucide="users"></i> Contractors Hub
                 </button>
-                <button class="dash-tab" id="tab-btn-emails" onclick="switchDashSubTab('emails')">
-                    <i data-lucide="mail"></i> Email Automations
+                 <button class="dash-tab" id="tab-btn-emails" onclick="switchDashSubTab('emails')">
+                    <i data-lucide="megaphone"></i> Marketing & Ads Hub
                 </button>
                 <button class="dash-tab" id="tab-btn-analytics" onclick="switchDashSubTab('analytics')">
                     <i data-lucide="bar-chart-3"></i> Analytics & KPI
@@ -447,6 +451,28 @@
                         <div class="prospects-list" id="prospects-list">
                             <!-- Prospect items -->
                         </div>
+                        
+                        <!-- Add Custom Comp pin form -->
+                        <div style="margin: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                            <h4 style="font-size:0.85rem; font-weight:700; color:white; margin-bottom:0.5rem;">Add Comparable Property Pin</h4>
+                            <form id="add-comp-form" onsubmit="handleAddComp(event)" style="display:flex; flex-direction:column; gap:0.75rem;">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                    <input type="text" id="comp-address" placeholder="Address (e.g. 104 Pine Rd)" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                    <input type="number" id="comp-price" placeholder="Price ($ USD)" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                    <input type="number" id="comp-beds" placeholder="Beds (e.g. 3)" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                    <input type="number" id="comp-baths" placeholder="Baths (e.g. 2)" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                    <input type="number" id="comp-x" placeholder="X offset (-100 to 100)" min="-100" max="100" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                    <input type="number" id="comp-y" placeholder="Y offset (-100 to 100)" min="-100" max="100" required style="padding:0.4rem; font-size:0.75rem; background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px;">
+                                </div>
+                                <button type="submit" class="btn-primary" style="padding:0.45rem; font-size:0.8rem; display:flex; justify-content:center; align-items:center; gap:4px;">
+                                    <i data-lucide="plus-circle" style="width:14px; height:14px;"></i> Drop Comp Map Pin
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -462,99 +488,169 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD SUBTAB: EMAIL AUTOMATIONS -->
+            <!-- DASHBOARD SUBTAB: MARKETING & ADS HUB -->
             <div id="dash-tab-emails" class="dash-subview">
-                <div class="emails-layout">
-                    <!-- Templates and Toggles -->
-                    <div class="glass-card templates-card">
-                        <div class="card-header">
-                            <i data-lucide="settings" class="accent-text"></i>
-                            <h3>Automated Email Alerts</h3>
+                <div class="emails-layout" style="display:grid; grid-template-columns:1.1fr 1fr; gap:1.5rem;">
+                    
+                    <!-- Left: Emails Outreach & Campaigns -->
+                    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                        <div class="glass-card templates-card">
+                            <div class="card-header">
+                                <i data-lucide="settings" class="accent-text"></i>
+                                <h3>Automated Email Alerts</h3>
+                            </div>
+                            <div class="card-body settings-body">
+                                <div class="setting-toggle-row">
+                                    <div class="toggle-desc">
+                                        <h4>Auto Lead Intake Email</h4>
+                                        <p>Send calculation details and onboarding confirmation upon website registration.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chk-auto-intake" checked onchange="saveEmailSettings()">
+                                        <span class="slider-switch round"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-toggle-row">
+                                    <div class="toggle-desc">
+                                        <h4>Auto Renovations Email</h4>
+                                        <p>Send dispatch notice to the homeowner when contractors are assigned and rehab commences.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chk-auto-rehab" checked onchange="saveEmailSettings()">
+                                        <span class="slider-switch round"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-toggle-row">
+                                    <div class="toggle-desc">
+                                        <h4>Auto Contract Update Email</h4>
+                                        <p>Send contract proposals automatically when moving cards into the 'Agreement Sent' column.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chk-auto-contract" checked onchange="saveEmailSettings()">
+                                        <span class="slider-switch round"></span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body settings-body">
-                            <div class="setting-toggle-row">
-                                <div class="toggle-desc">
-                                    <h4>Auto Lead Intake Email</h4>
-                                    <p>Send calculation details and onboarding confirmation upon website registration.</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="chk-auto-intake" checked onchange="saveEmailSettings()">
-                                    <span class="slider-switch round"></span>
-                                </label>
+
+                        <!-- Outbound Funnel Campaign Builder -->
+                        <div class="glass-card templates-card">
+                            <div class="card-header">
+                                <i data-lucide="funnel" class="accent-text"></i>
+                                <h3>Outbound Drip Campaigns</h3>
                             </div>
-                            <div class="setting-toggle-row">
-                                <div class="toggle-desc">
-                                    <h4>Auto Renovations Email</h4>
-                                    <p>Send dispatch notice to the homeowner when contractors are assigned and rehab commences.</p>
+                            <div class="card-body settings-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+                                <p class="section-desc">Create marketing drip campaigns targeting home owners with properties that need renovations to list successfully.</p>
+                                
+                                <div class="form-group">
+                                    <label for="campaign-template-select">Campaign Message Drip Template</label>
+                                    <select id="campaign-template-select" onchange="updateCampaignTemplatePreview()">
+                                        <option value="expired">Expired Listing Outreach (Unsold due to condition)</option>
+                                        <option value="upgrade">Upgrade-to-List (Funding renovations upfront)</option>
+                                        <option value="addition">Home Additions Pitch (Maximize square footage & value)</option>
+                                    </select>
                                 </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="chk-auto-rehab" checked onchange="saveEmailSettings()">
-                                    <span class="slider-switch round"></span>
-                                </label>
-                            </div>
-                            <div class="setting-toggle-row">
-                                <div class="toggle-desc">
-                                    <h4>Auto Contract Update Email</h4>
-                                    <p>Send contract proposals automatically when moving cards into the 'Agreement Sent' column.</p>
+                                <div class="form-group">
+                                    <label for="campaign-recipient-email">Recipient / Target Email Address</label>
+                                    <input type="email" id="campaign-recipient-email" placeholder="e.g. seller@homemail.com">
                                 </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="chk-auto-contract" checked onchange="saveEmailSettings()">
-                                    <span class="slider-switch round"></span>
-                                </label>
+                                <div class="form-group">
+                                    <label for="campaign-subject-input">Outbound Subject Line</label>
+                                    <input type="text" id="campaign-subject-input" style="background:rgba(255,255,255,0.01);">
+                                </div>
+                                <div class="form-group">
+                                    <label for="campaign-preview-body">Outbound Email Copy Preview</label>
+                                    <textarea id="campaign-preview-body" rows="5" placeholder="Campaign content..." style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.5rem; font-family:inherit; font-size:0.8rem; width:100%; box-sizing:border-box; resize:vertical;"></textarea>
+                                </div>
+                                <button class="btn-primary" onclick="triggerOutboundCampaignEmail()" style="width:100%;">
+                                    <i data-lucide="send"></i> Launch Drip Email Campaign
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Outbound Funnel Campaign Builder -->
-                    <div class="glass-card templates-card" style="margin-top: 1.5rem;">
-                        <div class="card-header">
-                            <i data-lucide="funnel" class="accent-text"></i>
-                            <h3>Lead Capture & Marketing Campaigns</h3>
+                    <!-- Right: Multichannel Ads Builder & Campaign Registry -->
+                    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <i data-lucide="megaphone" class="accent-text"></i>
+                                <h3>Social Media Ads Creator</h3>
+                            </div>
+                            <div class="card-body settings-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+                                <div class="form-group">
+                                    <label for="ad-lead-select">Select Property Listing</label>
+                                    <select id="ad-lead-select" onchange="updateAdPreview()"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ad-channel-select">Marketing Channel</label>
+                                    <select id="ad-channel-select" onchange="updateAdPreview()">
+                                        <option value="instagram">Instagram Ads (Feed Post)</option>
+                                        <option value="facebook">Facebook Ads (Sponsored Feed)</option>
+                                        <option value="google">Google Search (Sponsored Text Ad)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ad-budget-range" style="display:flex; justify-content:space-between;">
+                                        <span>Daily Budget Limit</span>
+                                        <span id="ad-budget-label" style="font-weight:700; color:var(--primary);">$50/day</span>
+                                    </label>
+                                    <input type="range" id="ad-budget-range" min="10" max="500" value="50" step="5" oninput="updateAdPreview()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ad-headline-input">Ad Description / Body Copy</label>
+                                    <textarea id="ad-headline-input" rows="3" onkeyup="updateAdPreview()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.5rem; font-family:inherit; font-size:0.8rem; width:100%; box-sizing:border-box;"></textarea>
+                                </div>
+
+                                <!-- Live Interactive Ad Mockup Frame -->
+                                <div id="ad-mockup-viewport" style="background:#080a14; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem; min-height:220px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+
+                                <button class="btn-primary" onclick="publishAdCampaign()" style="width:100%;">
+                                    <i data-lucide="rocket"></i> Launch Ad Campaign
+                                </button>
+                            </div>
                         </div>
-                        <div class="card-body settings-body" style="display:flex; flex-direction:column; gap:1.25rem;">
-                            <p class="section-desc">Create marketing drip campaigns targeting home owners with properties that need renovations to list successfully.</p>
-                            
-                            <div class="form-group">
-                                <label for="campaign-template-select">Campaign Message Drip Template</label>
-                                <select id="campaign-template-select" onchange="updateCampaignTemplatePreview()">
-                                    <option value="expired">Expired Listing Outreach (Unsold due to condition)</option>
-                                    <option value="upgrade">Upgrade-to-List (Funding renovations upfront)</option>
-                                    <option value="addition">Home Additions Pitch (Maximize square footage & value)</option>
-                                </select>
-                            </div>
 
-                            <div class="form-group">
-                                <label for="campaign-recipient-email">Recipient / Target Email Address</label>
-                                <input type="email" id="campaign-recipient-email" placeholder="e.g. seller@homemail.com">
+                        <!-- Active Ad Campaigns Grid -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <i data-lucide="activity" class="accent-text"></i>
+                                <h3>Active Ad Campaigns</h3>
                             </div>
-
-                            <div class="form-group">
-                                <label for="campaign-subject-input">Outbound Subject Line</label>
-                                <input type="text" id="campaign-subject-input" style="background:rgba(255,255,255,0.01);">
+                            <div class="card-body settings-body" style="padding:0;">
+                                <div style="max-height: 250px; overflow-y:auto; border-radius: var(--radius-md);">
+                                    <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:left;" id="ad-campaigns-table">
+                                        <thead>
+                                            <tr style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-muted);">
+                                                <th style="padding:0.6rem;">Channel</th>
+                                                <th style="padding:0.6rem;">Budget</th>
+                                                <th style="padding:0.6rem; text-align:right;">Impressions</th>
+                                                <th style="padding:0.6rem; text-align:right;">Clicks</th>
+                                                <th style="padding:0.6rem; text-align:right;">Leads</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ad-campaigns-list">
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label for="campaign-preview-body">Outbound Email Copy Preview</label>
-                                <textarea id="campaign-preview-body" rows="6" placeholder="Campaign content..." style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.5rem; font-family:inherit; font-size:0.8rem; width:100%; box-sizing:border-box; resize:vertical;"></textarea>
+                        <!-- Outbound Email Log -->
+                        <div class="glass-card logs-card" style="margin-top:0;">
+                            <div class="card-header">
+                                <i data-lucide="history" class="accent-text"></i>
+                                <h3>Outbound Communication Log</h3>
+                                <button class="btn-secondary btn-sm-clear" onclick="clearEmailLogs()">Clear Logs</button>
                             </div>
-
-                            <button class="btn-primary" onclick="triggerOutboundCampaignEmail()" style="width:100%;">
-                                <i data-lucide="send"></i> Launch Drip Email Campaign
-                            </button>
+                            <div class="card-body log-list" id="email-log-list">
+                                <!-- Logs dynamically loaded -->
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Outbound Email Log -->
-                    <div class="glass-card logs-card">
-                        <div class="card-header">
-                            <i data-lucide="history" class="accent-text"></i>
-                            <h3>Outbound Communication Log</h3>
-                            <button class="btn-secondary btn-sm-clear" onclick="clearEmailLogs()">Clear Logs</button>
-                        </div>
-                        <div class="card-body log-list" id="email-log-list">
-                            <!-- Logs dynamically loaded -->
-                        </div>
-                    </div>
                 </div>
             </div>
 
