@@ -4239,3 +4239,75 @@ function saveCurrentLeadWholesaleDetails() {
     saveLeadsToStorage();
     updateDrawerCalculations();
 }
+
+function sendTestWebhookPayload() {
+    const emailWebhook = document.getElementById('api-email-webhook-url').value.trim();
+    const adsWebhook = document.getElementById('api-ads-webhook-url').value.trim();
+
+    if (!emailWebhook && !adsWebhook) {
+        showToast("Please enter an Ads or Email Webhook URL first.");
+        return;
+    }
+
+    showToast("Sending test payloads to Webhooks...");
+
+    const timestamp = new Date().toISOString();
+
+    // 1. Send FB Ad Payload
+    if (adsWebhook) {
+        fetch(adsWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event: 'ad_campaign_launched',
+                campaignId: 'ad-fb-test',
+                property: '123 Main St',
+                channel: 'facebook',
+                budget: 50,
+                headline: '🚨 Invest in our Skills to create Capital at 123 Main St! We construct the improvements you need to secure top dollar.',
+                timestamp: timestamp
+            })
+        }).then(res => {
+            if (res.ok) showToast("Facebook ad payload sent successfully!");
+        }).catch(err => showToast("FB Ad error: " + err.message));
+    }
+
+    // 2. Send Email Drip Payload
+    if (emailWebhook) {
+        fetch(emailWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event: 'email_drip_sent',
+                recipient: 'sean@example.com',
+                subject: 'Invest in our Skills to create Capital at 123 Main St.',
+                body: 'Hi there,\n\nAre you planning to list your home but worried about how to prepare it? Invest in our Skills to create Capital.\n\nWe specialize in preparing homes to capture maximum equity under a 50/50 payment split model (50% upfront, 50% deferred to closing). Let\'s unlock your true home valuation.\n\nBest regards,\nRevitalize Listing Team',
+                timestamp: timestamp
+            })
+        }).then(res => {
+            if (res.ok) showToast("Email drip payload sent successfully!");
+        }).catch(err => showToast("Email error: " + err.message));
+        
+        // 3. Send Contract Payload
+        fetch(emailWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event: 'contract_signed',
+                leadId: 'lead-sample-123',
+                name: 'Sean',
+                address: '123 Main St',
+                dealType: 'wholesale',
+                signature: {
+                    typedName: 'Sean',
+                    ip: '192.168.1.102',
+                    hash: '183b09cc10ea90b25eb9d70be646b37d6e99fa93a2',
+                    date: new Date().toLocaleString()
+                },
+                timestamp: timestamp
+            })
+        }).then(res => {
+            if (res.ok) showToast("Contract signature payload sent successfully!");
+        }).catch(err => showToast("Contract error: " + err.message));
+    }
+}
