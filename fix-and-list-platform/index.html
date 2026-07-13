@@ -853,6 +853,48 @@
 
                         <!-- Right Column: Ledger & Comps -->
                         <div class="drawer-left-col">
+                            <!-- Wholesale Custom Pre-Build Panel Card -->
+                            <div class="sub-card" id="drawer-wholesale-card" style="margin-bottom: 1.5rem;">
+                                <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--primary);">
+                                    <i data-lucide="handshake"></i> Wholesale Custom Pre-Build Details
+                                </h3>
+                                <p class="section-desc" style="margin-bottom:0.75rem;">Wholesale contract details & stay-in-place occupancy terms.</p>
+                                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                                    <div class="ledger-row">
+                                        <span>Deal Classification</span>
+                                        <select id="lead-deal-type" onchange="updateLeadDealType()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem;">
+                                            <option value="traditional">Traditional Fix-and-List</option>
+                                            <option value="wholesale">Wholesale Custom Pre-Build</option>
+                                        </select>
+                                    </div>
+                                    <div id="wholesale-input-group" style="display:none; flex-direction:column; gap:0.75rem;">
+                                        <div class="ledger-row">
+                                            <span>Buyer Full Name</span>
+                                            <input type="text" id="lead-buyer-name" placeholder="John Buyer" oninput="saveCurrentLeadWholesaleDetails()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem; width:120px;">
+                                        </div>
+                                        <div class="ledger-row">
+                                            <span>Buyer Email Address</span>
+                                            <input type="email" id="lead-buyer-email" placeholder="buyer@email.com" oninput="saveCurrentLeadWholesaleDetails()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem; width:120px;">
+                                        </div>
+                                        <div class="ledger-row">
+                                            <span>Buyer Contract Price ($)</span>
+                                            <input type="number" id="lead-buyer-price" placeholder="450000" oninput="saveCurrentLeadWholesaleDetails()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem; width:120px;">
+                                        </div>
+                                        <div class="ledger-row">
+                                            <span>Wholesale Markup Fee ($)</span>
+                                            <input type="number" id="lead-wholesale-fee" placeholder="15000" oninput="saveCurrentLeadWholesaleDetails()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem; width:120px;">
+                                        </div>
+                                        <div class="ledger-row">
+                                            <span>Seller Stay Term (Days)</span>
+                                            <input type="number" id="lead-seller-stay" placeholder="60" oninput="saveCurrentLeadWholesaleDetails()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.3rem; font-size:0.75rem; width:120px;">
+                                        </div>
+                                        <div style="font-size:0.7rem; color:var(--warning); padding:0.4rem; background:rgba(245,158,11,0.05); border-radius:4px; border:1px solid rgba(245,158,11,0.15); line-height:1.3;">
+                                            ℹ️ Seller will stay in the house for the specified days while custom renovations are built to the Buyer's specifications prior to escrow closing.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="sub-card ledger-card">
                                 <h3>Financial Breakdown</h3>
                                 <div class="ledger-rows">

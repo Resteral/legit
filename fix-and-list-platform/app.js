@@ -1703,6 +1703,17 @@ function openDrawer(leadId) {
     document.getElementById('lead-arv').value = lead.targetARV;
     document.getElementById('lead-commission').value = lead.commissionRate || 6;
 
+    // Populate Wholesale fields
+    const dealType = lead.dealType || 'traditional';
+    document.getElementById('lead-deal-type').value = dealType;
+    document.getElementById('lead-buyer-name').value = lead.buyerName || '';
+    document.getElementById('lead-buyer-email').value = lead.buyerEmail || '';
+    document.getElementById('lead-buyer-price').value = lead.buyerPrice || '';
+    document.getElementById('lead-wholesale-fee').value = lead.wholesaleFee || '';
+    document.getElementById('lead-seller-stay').value = lead.sellerStayTerm || '';
+    
+    document.getElementById('wholesale-input-group').style.display = (dealType === 'wholesale') ? 'flex' : 'none';
+
     renderScopeBuilder(lead);
 
     // Render Client Work Explanations
@@ -1937,13 +1948,32 @@ function updateDrawerCalculations() {
         }
     });
 
-    const commissionVal = arv * (commPct / 100);
-    const ownerFinalPayout = arv - totalDiscounted - commissionVal;
+    let ownerFinalPayout = 0;
+    let profitLift = 0;
 
-    const standardAsIsCommission = asIs * 0.06;
-    const ownerAsIsPayout = asIs - standardAsIsCommission;
+    if (lead.dealType === 'wholesale') {
+        const buyerPrice = lead.buyerPrice || 0;
+        const wholesaleFee = lead.wholesaleFee || 0;
+        const purchaseOfferPrice = buyerPrice - wholesaleFee;
+        const escrowFees = buyerPrice * 0.015;
 
-    const profitLift = ownerFinalPayout - ownerAsIsPayout;
+        ownerFinalPayout = purchaseOfferPrice - (totalDiscounted / 2) - escrowFees;
+        const totalNetReturn = purchaseOfferPrice - totalDiscounted - escrowFees;
+        const standardAsIsCommission = asIs * 0.06;
+        const standardAsIsEscrow = asIs * 0.015;
+        const netAsIsProceeds = asIs - standardAsIsCommission - standardAsIsEscrow;
+        profitLift = totalNetReturn - netAsIsProceeds;
+    } else {
+        const commissionVal = arv * (commPct / 100);
+        const escrowFees = arv * 0.015;
+        ownerFinalPayout = arv - (totalDiscounted / 2) - commissionVal - escrowFees;
+
+        const standardAsIsCommission = asIs * 0.06;
+        const standardAsIsEscrow = asIs * 0.015;
+        const netAsIsProceeds = asIs - standardAsIsCommission - standardAsIsEscrow;
+        const totalNetReturn = arv - totalDiscounted - commissionVal - escrowFees;
+        profitLift = totalNetReturn - netAsIsProceeds;
+    }
 
     lead.asIsValue = asIs;
     lead.targetARV = arv;
@@ -2057,53 +2087,115 @@ function renderContractDocument() {
         if (btnESign) btnESign.style.display = 'flex';
     }
 
-    const contractHtml = `
-        <h1>REHAB & EXCLUSIVE LISTING AGREEMENT</h1>
-        <p>This Agreement is entered into on this <strong>${dateStr}</strong>, by and between:</p>
-        <p><strong>Homeowner(s):</strong> ${lead.name} ("Owner")<br>
-        <strong>Broker / Agent:</strong> Revitalize Realty Corp ("Broker")</p>
-        
-        <h3>RECITALS</h3>
-        <p>WHEREAS, Owner owns the real property located at <strong>${lead.address}</strong> (the "Property"); and</p>
-        <p>WHEREAS, Owner desires to prepare the Property for sale to maximize market valuation, but wishes to avoid out-of-pocket costs; and</p>
-        <p>WHEREAS, Broker agrees to orchestrate, supervise, and upfront the costs for home rehabilitation services through Broker's wholesale contractor network in exchange for an exclusive listing contract on the Property.</p>
+    let contractHtml = '';
 
-        <h3>1. SCOPE OF REHABILITATION WORK</h3>
-        <p>Broker agrees to oversee and pay upfront for the following renovation checklist items:</p>
-        <ul>
-            ${rehabDescList}
-        </ul>
-        <p>The total pre-approved renovation capital allocated is <strong>$${totalDiscountedRehab.toLocaleString()}</strong> (the "Renovation Budget").</p>
+    if (lead.dealType === 'wholesale') {
+        const buyerName = lead.buyerName || '[Insert Buyer Name]';
+        const buyerEmail = lead.buyerEmail || '[Insert Buyer Email]';
+        const buyerPrice = lead.buyerPrice || 0;
+        const wholesaleFee = lead.wholesaleFee || 0;
+        const sellerStayTerm = lead.sellerStayTerm || 0;
+        const purchaseOfferPrice = buyerPrice - wholesaleFee;
 
-        <h3>2. INTEREST-FREE REIMBURSEMENT AT CLOSING</h3>
-        <p>Broker will advance all capital required for the Renovation Budget. There will be no interest, fees, or markup charged on these funds. Owner agrees that the full Renovation Budget of <strong>$${totalDiscountedRehab.toLocaleString()}</strong> will be reimbursed to Broker directly from the escrow/closing proceeds upon the sale of the Property.</p>
+        contractHtml = `
+            <h1>WHOLESALE CUSTOM PRE-BUILD ASSIGNMENT AGREEMENT</h1>
+            <p>This Double-Contract and Assignment Agreement is entered into on this <strong>${dateStr}</strong>, by and between:</p>
+            <p><strong>Homeowner (Seller):</strong> ${lead.name} ("Seller")<br>
+            <strong>Wholesale Broker (Middleman):</strong> Revitalize Realty Corp ("Wholesaler")<br>
+            <strong>End Buyer (Buyer):</strong> ${buyerName} ("Buyer")</p>
+            
+            <h3>RECITALS</h3>
+            <p>WHEREAS, Seller owns the property at <strong>${lead.address}</strong> (the "Property") and wishes to sell; and</p>
+            <p>WHEREAS, Wholesaler has established purchase rights under a Purchase & Sale Contract with Seller for the purchase price of <strong>$${purchaseOfferPrice.toLocaleString()}</strong>; and</p>
+            <p>WHEREAS, Wholesaler wishes to assign these rights to Buyer for an Assignment/Wholesale Markup Fee of <strong>$${wholesaleFee.toLocaleString()}</strong>; and</p>
+            <p>WHEREAS, Buyer desires to customize the Property prior to closing, and Seller agrees to allow custom renovations to commence while Seller remains in occupancy of the Property.</p>
 
-        <h3>3. EXCLUSIVE RIGHT TO SELL LISTING CONTRACT</h3>
-        <p>In consideration of the upfront renovation capital funded by Broker, Owner hereby grants Broker the Exclusive Right to Sell the Property for a period of 180 days from the completion of renovations, under the following core terms:</p>
-        <ul>
-            <li><strong>Target Listing Price (ARV):</strong> $${lead.targetARV.toLocaleString()} (subject to market adjustment at listing time)</li>
-            <li><strong>Brokerage Commission Rate:</strong> ${lead.commissionRate || 6}% of the gross sale price (estimated at $${commissionVal.toLocaleString()})</li>
-            <li><strong>Minimum Net Cash to Owner Guarantee:</strong> Broker will utilize best efforts to negotiate terms ensuring Owner maximizes cash lift from the sale.</li>
-        </ul>
+            <h3>1. DOUBLE-CONTRACT PURCHASE TERMS</h3>
+            <p>Buyer agrees to purchase the Property for the gross sum of <strong>$${buyerPrice.toLocaleString()}</strong>. From this amount:</p>
+            <ul>
+                <li><strong>Seller Purchase Price:</strong> $${purchaseOfferPrice.toLocaleString()} paid to Seller.</li>
+                <li><strong>Wholesale Assignment Fee:</strong> $${wholesaleFee.toLocaleString()} paid to Wholesaler at closing.</li>
+            </ul>
 
-        <h3>4. OWNER REPRESENTATION & INDEMNIFICATION</h3>
-        <p>Owner certifies that they are the sole lawful owner of the Property, that all mortgages and liens are current, and that they will cooperate fully with Broker's renovation schedule and open house marketing campaigns.</p>
+            <h3>2. BUYER-DRIVEN CUSTOM REHABILITATION</h3>
+            <p>Buyer has selected the following customized renovation trades to be completed by Wholesaler's network prior to close:</p>
+            <ul>
+                ${rehabDescList}
+            </ul>
+            <p>The pre-approved Custom Rehab budget is <strong>$${totalDiscountedRehab.toLocaleString()}</strong>. Half of this budget ($${(totalDiscountedRehab / 2).toLocaleString()}) is funded upfront by the Buyer, and the other half is held in escrow until closing.</p>
 
-        ${esignCertHtml}
+            <h3>3. SELLER STAY-IN-PLACE OCCUPANCY AGREEMENT</h3>
+            <p>Seller shall remain in full possession and occupancy of the Property for a period of <strong>${sellerStayTerm} Days</strong> from the commencement of construction (the "Occupancy Period"). Seller agrees to grant construction crews reasonable access to complete the customized SOW items during this period. Seller shall vacate the Property upon completion of the Occupancy Period or at closing, whichever is later.</p>
 
-        <div class="sig-lines" style="${lead.signature ? 'display:none;' : ''}">
-            <div class="sig-box">
-                <div class="sig-line"></div>
-                <span>Owner Signature</span>
-                <span>Date: ________________________</span>
+            <h3>4. INDEMNIFICATION & ESCROW CLOSING</h3>
+            <p>Escrow shall close upon completion of custom construction items. Buyer takes property in AS-IS renovated condition post-construction.</p>
+
+            ${esignCertHtml}
+
+            <div class="sig-lines" style="${lead.signature ? 'display:none;' : ''}">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <span>Seller Signature</span>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <span>Buyer Signature</span>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <span>Wholesaler Signature</span>
+                </div>
             </div>
-            <div class="sig-box">
-                <div class="sig-line"></div>
-                <span>Revitalize Realty Broker Agent</span>
-                <span>Date: ________________________</span>
+        `;
+    } else {
+        contractHtml = `
+            <h1>REHAB & EXCLUSIVE LISTING AGREEMENT</h1>
+            <p>This Agreement is entered into on this <strong>${dateStr}</strong>, by and between:</p>
+            <p><strong>Homeowner(s):</strong> ${lead.name} ("Owner")<br>
+            <strong>Broker / Agent:</strong> Revitalize Realty Corp ("Broker")</p>
+            
+            <h3>RECITALS</h3>
+            <p>WHEREAS, Owner owns the real property located at <strong>${lead.address}</strong> (the "Property"); and</p>
+            <p>WHEREAS, Owner desires to prepare the Property for sale to maximize market valuation, but wishes to avoid out-of-pocket costs; and</p>
+            <p>WHEREAS, Broker agrees to orchestrate, supervise, and upfront the costs for home rehabilitation services through Broker's wholesale contractor network in exchange for an exclusive listing contract on the Property.</p>
+
+            <h3>1. SCOPE OF REHABILITATION WORK</h3>
+            <p>Broker agrees to oversee and pay upfront for the following renovation checklist items:</p>
+            <ul>
+                ${rehabDescList}
+            </ul>
+            <p>The total pre-approved renovation capital allocated is <strong>$${totalDiscountedRehab.toLocaleString()}</strong> (the "Renovation Budget").</p>
+
+            <h3>2. INTEREST-FREE REIMBURSEMENT AT CLOSING</h3>
+            <p>Broker will advance all capital required for the Renovation Budget. There will be no interest, fees, or markup charged on these funds. Owner agrees that the full Renovation Budget of <strong>$${totalDiscountedRehab.toLocaleString()}</strong> will be reimbursed to Broker directly from the escrow/closing proceeds upon the sale of the Property.</p>
+
+            <h3>3. EXCLUSIVE RIGHT TO SELL LISTING CONTRACT</h3>
+            <p>In consideration of the upfront renovation capital funded by Broker, Owner hereby grants Broker the Exclusive Right to Sell the Property for a period of 180 days from the completion of renovations, under the following core terms:</p>
+            <ul>
+                <li><strong>Target Listing Price (ARV):</strong> $${lead.targetARV.toLocaleString()} (subject to market adjustment at listing time)</li>
+                <li><strong>Brokerage Commission Rate:</strong> ${lead.commissionRate || 6}% of the gross sale price (estimated at $${commissionVal.toLocaleString()})</li>
+                <li><strong>Minimum Net Cash to Owner Guarantee:</strong> Broker will utilize best efforts to negotiate terms ensuring Owner maximizes cash lift from the sale.</li>
+            </ul>
+
+            <h3>4. OWNER REPRESENTATION & INDEMNIFICATION</h3>
+            <p>Owner certifies that they are the sole lawful owner of the Property, that all mortgages and liens are current, and that they will cooperate fully with Broker's renovation schedule and open house marketing campaigns.</p>
+
+            ${esignCertHtml}
+
+            <div class="sig-lines" style="${lead.signature ? 'display:none;' : ''}">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <span>Owner Signature</span>
+                    <span>Date: ________________________</span>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <span>Revitalize Realty Broker Agent</span>
+                    <span>Date: ________________________</span>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
 
     document.getElementById('contract-paper').innerHTML = contractHtml;
     lucide.createIcons();
@@ -2691,86 +2783,180 @@ function renderSettlementStatement() {
         if (item) rehabDiscounted += item.discounted;
     });
 
-    const commissionVal = arv * (commRate / 100);
-    const escrowFees = arv * 0.015; // 1.5% Escrow
-    const netProceeds = arv - rehabDiscounted - commissionVal - escrowFees;
-
     const standardAsIsCommission = asIs * 0.06;
     const standardAsIsEscrow = asIs * 0.015;
     const netAsIsProceeds = asIs - standardAsIsCommission - standardAsIsEscrow;
 
-    const equityLift = netProceeds - netAsIsProceeds;
+    let html = '';
 
-    const html = `
-        <h2 style="font-family:var(--font-family); color:#111827; text-align:center; font-size:1.5rem; margin-bottom:0.25rem;">Projected HUD-1 Escrow Ledger</h2>
-        <p style="text-align:center; font-size:0.8rem; color:#4b5563; margin-bottom:1.5rem; font-family:var(--font-family);">
-            Escrow File Reference: HUD1-REV-${lead.id.substring(5, 12).toUpperCase()} • Closing Agent: Title Office
-        </p>
+    if (lead.dealType === 'wholesale') {
+        const buyerPrice = lead.buyerPrice || 0;
+        const wholesaleFee = lead.wholesaleFee || 0;
+        const purchaseOfferPrice = buyerPrice - wholesaleFee;
+        const escrowFees = buyerPrice * 0.015;
 
-        <table class="settlement-hud-table">
-            <thead>
-                <tr>
-                    <th>HUD-1 Reference Item</th>
-                    <th style="text-align:right;">Debit ($)</th>
-                    <th style="text-align:right;">Credit ($)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="section-title" colspan="3">100. Gross Amount Due to Seller</td>
-                </tr>
-                <tr>
-                    <td>101. Contract Sales Price (Projected ARV)</td>
-                    <td></td>
-                    <td class="credit">$${arv.toLocaleString()}</td>
-                </tr>
-                
-                <tr>
-                    <td class="section-title" colspan="3">200. Reductions in Amount Due to Seller</td>
-                </tr>
-                <tr>
-                    <td>201. Advanced Renovation Cost Reimbursement</td>
-                    <td class="debit">$${rehabDiscounted.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>202. Real Estate Brokerage Commission (${commRate}%)</td>
-                    <td class="debit">$${commissionVal.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>203. Escrow, Settlement & Recording Title Fees (1.5% Est)</td>
-                    <td class="debit">$${escrowFees.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                
-                <tr>
-                    <td class="section-title" colspan="3">300. Payout Net Summary Comparison</td>
-                </tr>
-                <tr>
-                    <td><strong>Projected Revitalize Net Proceeds Cash</strong></td>
-                    <td></td>
-                    <td class="credit font-bold" style="font-size:0.95rem;">$${Math.round(netProceeds).toLocaleString()}</td>
-                </tr>
-                <tr style="background:#f9fafb;">
-                    <td>As-Is Traditional Net Proceeds Cash (Est)</td>
-                    <td></td>
-                    <td class="credit" style="color:#4b5563;">$${Math.round(netAsIsProceeds).toLocaleString()}</td>
-                </tr>
-                <tr class="flyer-total-highlight">
-                    <td style="font-weight:800; border-top:1.5px solid #047857;">Net Equity Lift (Earned Profit Margin)</td>
-                    <td></td>
-                    <td class="credit double-underline" style="color:#047857; text-align:right; font-size:1.05rem; font-weight:800;">
-                        +$${Math.round(equityLift).toLocaleString()}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        const netProceeds = purchaseOfferPrice - (rehabDiscounted / 2) - escrowFees;
+        const totalNetReturn = purchaseOfferPrice - rehabDiscounted - escrowFees;
+        const equityLift = totalNetReturn - netAsIsProceeds;
 
-        <div style="margin-top:2rem; border-top:1px solid #e5e7eb; padding-top:1.5rem; font-size:0.75rem; color:#4b5563; line-height:1.4;">
-            <strong>Disclaimer:</strong> This settlement statement represents a projected escrow estimate based on target valuations and contractor agreements. Final settlement numbers will be adjusted and settled by the closing title officer.
-        </div>
-    `;
+        html = `
+            <h2 style="font-family:var(--font-family); color:#111827; text-align:center; font-size:1.5rem; margin-bottom:0.25rem;">Projected HUD-1 Escrow Ledger (Wholesale Transaction)</h2>
+            <p style="text-align:center; font-size:0.8rem; color:#4b5563; margin-bottom:1.5rem; font-family:var(--font-family);">
+                Escrow File Reference: HUD1-WHOLESALE-${lead.id.substring(5, 12).toUpperCase()} • Closing Agent: Title Office
+            </p>
+
+            <table class="settlement-hud-table">
+                <thead>
+                    <tr>
+                        <th>HUD-1 Reference Item</th>
+                        <th style="text-align:right;">Debit ($)</th>
+                        <th style="text-align:right;">Credit ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="section-title" colspan="3">100. Gross Amount Due to Seller</td>
+                    </tr>
+                    <tr>
+                        <td>101. Buyer Purchase Price Contract</td>
+                        <td></td>
+                        <td class="credit">$${buyerPrice.toLocaleString()}</td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="section-title" colspan="3">200. Reductions in Amount Due to Seller</td>
+                    </tr>
+                    <tr>
+                        <td>201. Wholesale Assignment Fee (Markup)</td>
+                        <td class="debit">$${wholesaleFee.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>202. Custom Pre-Build Rehab Cost Deferred (50%)</td>
+                        <td class="debit">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="opacity:0.6;">
+                        <td>202b. Custom Pre-Build Rehab Cost Paid Upfront (50%)*</td>
+                        <td class="debit">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td>(Already Settled)</td>
+                    </tr>
+                    <tr>
+                        <td>203. Escrow, Settlement & Recording Title Fees (1.5% Est)</td>
+                        <td class="debit">$${escrowFees.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="section-title" colspan="3">300. Payout Net Summary Comparison</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Projected Seller Net Proceeds Cash</strong></td>
+                        <td></td>
+                        <td class="credit font-bold" style="font-size:0.95rem;">$${Math.round(netProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr style="background:#f9fafb;">
+                        <td>As-Is Traditional Net Proceeds Cash (Est)</td>
+                        <td></td>
+                        <td class="credit" style="color:#4b5563;">$${Math.round(netAsIsProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr class="flyer-total-highlight">
+                        <td style="font-weight:800; border-top:1.5px solid #047857;">Net Equity Lift (Earned Profit Margin)</td>
+                        <td></td>
+                        <td class="credit double-underline" style="color:#047857; text-align:right; font-size:1.05rem; font-weight:800;">
+                            +$${Math.round(equityLift).toLocaleString()}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top:2rem; border-top:1px solid #e5e7eb; padding-top:1.5rem; font-size:0.75rem; color:#4b5563; line-height:1.4;">
+                <strong>Disclaimer:</strong> This settlement represents a wholesale double-closing statement. Seller receives proceeds net of the Wholesaler's assignment markup fee and Buyer's custom pre-build construction costs.
+            </div>
+        `;
+    } else {
+        const commissionVal = arv * (commRate / 100);
+        const escrowFees = arv * 0.015;
+        const netProceeds = arv - (rehabDiscounted / 2) - commissionVal - escrowFees;
+        const totalNetReturn = arv - rehabDiscounted - commissionVal - escrowFees;
+        const equityLift = totalNetReturn - netAsIsProceeds;
+
+        html = `
+            <h2 style="font-family:var(--font-family); color:#111827; text-align:center; font-size:1.5rem; margin-bottom:0.25rem;">Projected HUD-1 Escrow Ledger</h2>
+            <p style="text-align:center; font-size:0.8rem; color:#4b5563; margin-bottom:1.5rem; font-family:var(--font-family);">
+                Escrow File Reference: HUD1-REV-${lead.id.substring(5, 12).toUpperCase()} • Closing Agent: Title Office
+            </p>
+
+            <table class="settlement-hud-table">
+                <thead>
+                    <tr>
+                        <th>HUD-1 Reference Item</th>
+                        <th style="text-align:right;">Debit ($)</th>
+                        <th style="text-align:right;">Credit ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="section-title" colspan="3">100. Gross Amount Due to Seller</td>
+                    </tr>
+                    <tr>
+                        <td>101. Contract Sales Price (Projected ARV)</td>
+                        <td></td>
+                        <td class="credit">$${arv.toLocaleString()}</td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="section-title" colspan="3">200. Reductions in Amount Due to Seller</td>
+                    </tr>
+                    <tr>
+                        <td>201. Advanced Rehab Cost Deferred to Closing (50%)</td>
+                        <td class="debit">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="opacity:0.6;">
+                        <td>201b. Advanced Rehab Cost Paid Upfront (50%)*</td>
+                        <td class="debit">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td>(Already Settled)</td>
+                    </tr>
+                    <tr>
+                        <td>202. Real Estate Brokerage Commission (${commRate}%)</td>
+                        <td class="debit">$${commissionVal.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>203. Escrow, Settlement & Recording Title Fees (1.5% Est)</td>
+                        <td class="debit">$${escrowFees.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="section-title" colspan="3">300. Payout Net Summary Comparison</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Projected Revitalize Net Proceeds Cash</strong></td>
+                        <td></td>
+                        <td class="credit font-bold" style="font-size:0.95rem;">$${Math.round(netProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr style="background:#f9fafb;">
+                        <td>As-Is Traditional Net Proceeds Cash (Est)</td>
+                        <td></td>
+                        <td class="credit" style="color:#4b5563;">$${Math.round(netAsIsProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr class="flyer-total-highlight">
+                        <td style="font-weight:800; border-top:1.5px solid #047857;">Net Equity Lift (Earned Profit Margin)</td>
+                        <td></td>
+                        <td class="credit double-underline" style="color:#047857; text-align:right; font-size:1.05rem; font-weight:800;">
+                            +$${Math.round(equityLift).toLocaleString()}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top:2rem; border-top:1px solid #e5e7eb; padding-top:1.5rem; font-size:0.75rem; color:#4b5563; line-height:1.4;">
+                <strong>Disclaimer:</strong> This settlement statement represents a projected escrow estimate based on target valuations and contractor agreements. Final settlement numbers will be adjusted and settled by the closing title officer.
+            </div>
+        `;
+    }
 
     document.getElementById('settlement-paper').innerHTML = html;
 }
@@ -3079,74 +3265,145 @@ function renderClientSettlement(lead) {
         if (item) rehabDiscounted += item.discounted;
     });
 
-    const commissionVal = arv * (commRate / 100);
-    const escrowFees = arv * 0.015;
-    const netProceeds = arv - (rehabDiscounted / 2) - commissionVal - escrowFees;
-
     const standardAsIsCommission = asIs * 0.06;
     const standardAsIsEscrow = asIs * 0.015;
     const netAsIsProceeds = asIs - standardAsIsCommission - standardAsIsEscrow;
 
-    const totalNetReturn = arv - rehabDiscounted - commissionVal - escrowFees;
-    const equityLift = totalNetReturn - netAsIsProceeds;
+    let html = '';
 
-    const html = `
-        <table class="settlement-hud-table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-            <thead>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-muted);">
-                    <th style="text-align:left; padding:0.4rem 0;">HUD-1 Line Item</th>
-                    <th style="text-align:right; padding:0.4rem 0;">Debit</th>
-                    <th style="text-align:right; padding:0.4rem 0;">Credit</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">100. Gross Amount Due to Seller</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
-                    <td>Contract Sales Price (ARV)</td>
-                    <td></td>
-                    <td style="text-align:right; color:var(--success);">$${arv.toLocaleString()}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">200. Reductions in Amount Due</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
-                    <td>Rehab Capital Deferred to Closing (50%)</td>
-                    <td style="text-align:right; color:var(--danger);">$${(rehabDiscounted / 2).toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03); opacity:0.6;">
-                    <td>Rehab Capital Paid Upfront (50%)</td>
-                    <td style="text-align:right;">$${(rehabDiscounted / 2).toLocaleString()}*</td>
-                    <td>(Already Settled)</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
-                    <td>Real Estate Commission (${commRate}%)</td>
-                    <td style="text-align:right; color:var(--danger);">$${commissionVal.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
-                    <td>Title & Escrow Fees (Est)</td>
-                    <td style="text-align:right; color:var(--danger);">$${escrowFees.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">300. Summary Proceeds</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-weight:700;">
-                    <td>Est Net Closing Proceeds Payout</td>
-                    <td></td>
-                    <td style="text-align:right; color:var(--success); font-size:0.85rem;">$${Math.round(netProceeds).toLocaleString()}</td>
-                </tr>
-                <tr style="color:var(--success); font-weight:700; background:rgba(16,185,129,0.03); border-top: 1px solid rgba(16,185,129,0.1);">
-                    <td style="padding:0.4rem;">Added Net Profit Gain (vs As-Is)</td>
-                    <td></td>
-                    <td style="text-align:right; padding:0.4rem; font-size:0.9rem;">+$${Math.round(equityLift).toLocaleString()}</td>
-                </tr>
-            </tbody>
-        </table>
-    `;
+    if (lead.dealType === 'wholesale') {
+        const buyerPrice = lead.buyerPrice || 0;
+        const wholesaleFee = lead.wholesaleFee || 0;
+        const purchaseOfferPrice = buyerPrice - wholesaleFee;
+        const escrowFees = buyerPrice * 0.015;
+
+        const netProceeds = purchaseOfferPrice - (rehabDiscounted / 2) - escrowFees;
+        const totalNetReturn = purchaseOfferPrice - rehabDiscounted - escrowFees;
+        const equityLift = totalNetReturn - netAsIsProceeds;
+
+        html = `
+            <table class="settlement-hud-table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-muted);">
+                        <th style="text-align:left; padding:0.4rem 0;">HUD-1 Line Item</th>
+                        <th style="text-align:right; padding:0.4rem 0;">Debit</th>
+                        <th style="text-align:right; padding:0.4rem 0;">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">100. Gross Amount Due to Seller</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Buyer Purchase Price Contract</td>
+                        <td></td>
+                        <td style="text-align:right; color:var(--success);">$${buyerPrice.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">200. Reductions in Amount Due</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Wholesale Assignment Markup Fee</td>
+                        <td style="text-align:right; color:var(--danger);">$${wholesaleFee.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Custom Pre-Build Rehab Cost Deferred (50%)</td>
+                        <td style="text-align:right; color:var(--danger);">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03); opacity:0.6;">
+                        <td>Custom Pre-Build Rehab Cost Paid Upfront (50%)*</td>
+                        <td style="text-align:right;">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td>(Already Settled)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Title & Escrow Fees (Est)</td>
+                        <td style="text-align:right; color:var(--danger);">$${escrowFees.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">300. Summary Proceeds</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                        <td>Projected Seller Net Proceeds Cash</td>
+                        <td></td>
+                        <td style="text-align:right; color:var(--success); font-size:0.85rem;">$${Math.round(netProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:var(--success); font-weight:700; background:rgba(16,185,129,0.03); border-top: 1px solid rgba(16,185,129,0.1);">
+                        <td style="padding:0.4rem;">Added Net Profit Gain (vs As-Is)</td>
+                        <td></td>
+                        <td style="text-align:right; padding:0.4rem; font-size:0.9rem;">+$${Math.round(equityLift).toLocaleString()}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    } else {
+        const commissionVal = arv * (commRate / 100);
+        const escrowFees = arv * 0.015;
+        const netProceeds = arv - (rehabDiscounted / 2) - commissionVal - escrowFees;
+
+        const totalNetReturn = arv - rehabDiscounted - commissionVal - escrowFees;
+        const equityLift = totalNetReturn - netAsIsProceeds;
+
+        html = `
+            <table class="settlement-hud-table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05); color:var(--text-muted);">
+                        <th style="text-align:left; padding:0.4rem 0;">HUD-1 Line Item</th>
+                        <th style="text-align:right; padding:0.4rem 0;">Debit</th>
+                        <th style="text-align:right; padding:0.4rem 0;">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">100. Gross Amount Due to Seller</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Contract Sales Price (ARV)</td>
+                        <td></td>
+                        <td style="text-align:right; color:var(--success);">$${arv.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">200. Reductions in Amount Due</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Rehab Capital Deferred to Closing (50%)</td>
+                        <td style="text-align:right; color:var(--danger);">$${(rehabDiscounted / 2).toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03); opacity:0.6;">
+                        <td>Rehab Capital Paid Upfront (50%)</td>
+                        <td style="text-align:right;">$${(rehabDiscounted / 2).toLocaleString()}*</td>
+                        <td>(Already Settled)</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Real Estate Commission (${commRate}%)</td>
+                        <td style="text-align:right; color:var(--danger);">$${commissionVal.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <td>Title & Escrow Fees (Est)</td>
+                        <td style="text-align:right; color:var(--danger);">$${escrowFees.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0.4rem 0; font-weight:700; color:var(--primary);" colspan="3">300. Summary Proceeds</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                        <td>Est Net Closing Proceeds Payout</td>
+                        <td></td>
+                        <td style="text-align:right; color:var(--success); font-size:0.85rem;">$${Math.round(netProceeds).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:var(--success); font-weight:700; background:rgba(16,185,129,0.03); border-top: 1px solid rgba(16,185,129,0.1);">
+                        <td style="padding:0.4rem;">Added Net Profit Gain (vs As-Is)</td>
+                        <td></td>
+                        <td style="text-align:right; padding:0.4rem; font-size:0.9rem;">+$${Math.round(equityLift).toLocaleString()}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    }
 
     document.getElementById('client-settlement-paper').innerHTML = html;
 }
@@ -3376,16 +3633,16 @@ function handleSendTour(event) {
 // Campaign templates
 const CAMPAIGN_TEMPLATES = {
     expired: {
-        subject: "Is your property at {Address} still on the market? We fund repairs.",
-        body: "Hi there,\n\nI noticed your listing at {Address} expired on the market. In today's market, 78% of active buyers pass on homes needing repairs or dated cosmetics (paint, floors, kitchens).\n\nRevitalize Realty advances 100% of these renovation costs upfront with zero out-of-pocket fees and zero interest, recovering the funds only when the home sells. We'll handle everything from planning to vetted contractor dispatches so you can sell for top dollar.\n\nBest regards,\nRevitalize Listing Team"
+        subject: "Is your property at {Address} still on the market? Invest in our skills to create Capital.",
+        body: "Hi there,\n\nI noticed your listing at {Address} expired on the market. In today's market, 78% of active buyers pass on homes needing repairs or dated cosmetics (paint, floors, kitchens).\n\nWith Revitalize, you can invest in our skills to create Capital. Under our 50/50 payment split terms, we construct the improvements you need to secure top dollar, deferring half the cost to sale closing. We'll handle everything from planning to vetted contractor dispatches.\n\nBest regards,\nRevitalize Listing Team"
     },
     upgrade: {
-        subject: "Get up to $50,000 more for your home at {Address} - zero out of pocket.",
-        body: "Hi there,\n\nAre you planning to list your home but worried about the cost of making repairs? We specialize in preparing homes to capture maximum equity.\n\nWe advance all remodeling capital interest-free and manage the construction from start to finish. Let's unlock your true home valuation.\n\nBest regards,\nRevitalize Listing Team"
+        subject: "Invest in our skills to create Capital at {Address}.",
+        body: "Hi there,\n\nAre you planning to list your home but worried about how to prepare it? Invest in our skills to create Capital.\n\nWe specialize in preparing homes to capture maximum equity under a 50/50 payment split model (50% upfront, 50% deferred to closing). Let's unlock your true home valuation.\n\nBest regards,\nRevitalize Listing Team"
     },
     addition: {
-        subject: "Adding square footage to {Address} to maximize your listing price.",
-        body: "Hi there,\n\nDid you know adding a bathroom or extending your living area yields up to 150% ROI at closing? We provide interest-free advanced funding for additions and structural upgrades before listing your home.\n\nLet us design a custom plan to attract premium offers.\n\nBest regards,\nRevitalize Listing Team"
+        subject: "Adding square footage to {Address} - Invest in our skills to create Capital.",
+        body: "Hi there,\n\nDid you know adding a bathroom or extending your living area yields up to 150% ROI at closing? Invest in our skills to create Capital.\n\nWe provide advanced custom additions and upgrades with a 50/50 payment split before listing your home. Let us design a custom plan to attract premium offers.\n\nBest regards,\nRevitalize Listing Team"
     }
 };
 
@@ -3794,4 +4051,30 @@ function dispatchRealEmail(recipient, subject, body) {
             showToast(`Webhook Network Error: ${err.message || err}`);
         });
     }
+}
+
+function updateLeadDealType() {
+    const lead = leads.find(l => l.id === currentSelectedLeadId);
+    if (!lead) return;
+
+    const val = document.getElementById('lead-deal-type').value;
+    lead.dealType = val;
+    saveLeadsToStorage();
+
+    document.getElementById('wholesale-input-group').style.display = (val === 'wholesale') ? 'flex' : 'none';
+    updateDrawerCalculations();
+}
+
+function saveCurrentLeadWholesaleDetails() {
+    const lead = leads.find(l => l.id === currentSelectedLeadId);
+    if (!lead) return;
+
+    lead.buyerName = document.getElementById('lead-buyer-name').value.trim();
+    lead.buyerEmail = document.getElementById('lead-buyer-email').value.trim();
+    lead.buyerPrice = parseInt(document.getElementById('lead-buyer-price').value) || 0;
+    lead.wholesaleFee = parseInt(document.getElementById('lead-wholesale-fee').value) || 0;
+    lead.sellerStayTerm = parseInt(document.getElementById('lead-seller-stay').value) || 0;
+
+    saveLeadsToStorage();
+    updateDrawerCalculations();
 }
