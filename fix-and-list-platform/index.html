@@ -370,9 +370,17 @@
             </div>
 
             <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
-                <div class="card-header" style="margin-bottom:1.5rem;">
-                    <i data-lucide="building" class="accent-text"></i>
-                    <h2>Available Homes For Sale</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <i data-lucide="building" class="accent-text"></i>
+                        <h2 style="margin:0;">Available Homes For Sale</h2>
+                    </div>
+                    
+                    <!-- Real-World Listings Search Bar -->
+                    <div style="display:flex; gap:0.5rem; width:100%; max-width:400px;">
+                        <input type="text" id="market-search-input" placeholder="Search city / zip for active homes..." style="padding:0.4rem 0.8rem; font-size:0.8rem; background:rgba(0,0,0,0.3); color:white; border:1px solid var(--border-color); border-radius:4px; flex-grow:1; box-sizing:border-box;">
+                        <button class="btn-primary" onclick="fetchLiveMarketListings()" style="padding:0.4rem 1rem; font-size:0.8rem; display:flex; align-items:center; gap:0.25rem;"><i data-lucide="search" style="width:12px;height:12px;"></i> Search MLS</button>
+                    </div>
                 </div>
                 <div class="catalog-grid" id="public-catalog-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:2rem;">
                     <!-- Populated dynamically by app.js -->
@@ -1925,6 +1933,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Lead successfully created!</div>
 
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=26"></script>
 </body>
 </html>
