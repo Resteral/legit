@@ -335,6 +335,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     photos: [
                         'https://images.unsplash.com/photo-1605647540924-852290f6b0d5?auto=format&fit=crop&w=400&q=80'
                     ]
+                },
+                {
+                    id: 'biz-paint-1',
+                    name: 'ColorCraft Precision Painting',
+                    trade: 'painting',
+                    rate: 65,
+                    email: 'colorcraft@paint.com',
+                    webhook: 'https://hook.us2.make.com/1ugb4pws46g5xpl97qeicogdpv1zgped',
+                    sponsored: true,
+                    rating: 4.8,
+                    distance: 1.7,
+                    reviews: [
+                        { author: 'Amy Pond', rating: 5, text: 'Painted our entire interior in 3 days. Clean lines, zero mess!' }
+                    ],
+                    photos: [
+                        'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80'
+                    ]
+                },
+                {
+                    id: 'biz-lawn-1',
+                    name: 'GreenScapes Premium Landscaping',
+                    trade: 'landscaping',
+                    rate: 55,
+                    email: 'greenscapes@lawn.com',
+                    webhook: 'https://hook.us2.make.com/1ugb4pws46g5xpl97qeicogdpv1zgped',
+                    sponsored: false,
+                    rating: 4.9,
+                    distance: 2.8,
+                    reviews: [
+                        { author: 'Donna Noble', rating: 5, text: 'Stunning pavers and retaining wall installation. Highly recommend!' }
+                    ],
+                    photos: [
+                        'https://images.unsplash.com/photo-1558904541-efa8c1a68d6d?auto=format&fit=crop&w=400&q=80'
+                    ]
                 }
             ];
             localStorage.setItem('revitalize_labor_businesses', JSON.stringify(laborBusinesses));
