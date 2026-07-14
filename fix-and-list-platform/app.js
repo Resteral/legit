@@ -3945,14 +3945,9 @@ function fetchLiveMarketListings(customQuery) {
         lucide.createIcons();
     }
 
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(query + " residential")}`)
+    // Geocode the city center
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`)
         .then(res => res.json())
-        .then(data => {
-            if (!data || data.length === 0) {
-                return fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(query + " house")}`).then(r => r.json());
-            }
-            return data;
-        })
         .then(data => {
             if (!data || data.length === 0) {
                 if (grid) {
@@ -3960,6 +3955,10 @@ function fetchLiveMarketListings(customQuery) {
                 }
                 return;
             }
+
+            const centerLat = parseFloat(data[0].lat);
+            const centerLon = parseFloat(data[0].lon);
+            const shortCityName = data[0].display_name.split(',')[0];
 
             const unsplashImages = [
                 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=400&q=80',
@@ -3970,9 +3969,17 @@ function fetchLiveMarketListings(customQuery) {
                 'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?auto=format&fit=crop&w=400&q=80'
             ];
 
-            liveMarketListings = data.map((item, index) => {
-                const address = item.display_name.split(',').slice(0, 3).join(',');
+            const commonStreets = ['Oak Ridge Rd', 'Pinecrest Dr', 'Sunset Boulevard', 'Magnolia Ave', 'Valley View Dr', 'Maple Ave'];
+
+            liveMarketListings = commonStreets.map((street, index) => {
+                const number = Math.floor(100 + Math.random() * 899);
+                const address = `${number} ${street}, ${shortCityName}`;
                 const price = Math.round(350 + Math.random() * 450) * 1000;
+                
+                // 0.01 degree offset is approx 0.7 miles
+                const latOffset = (Math.random() * 2 - 1) * 0.02;
+                const lonOffset = (Math.random() * 2 - 1) * 0.02;
+
                 return {
                     id: `mls-${Date.now()}-${index}`,
                     address: address,
@@ -3980,7 +3987,9 @@ function fetchLiveMarketListings(customQuery) {
                     beds: 3 + (index % 2),
                     baths: 2 + (index % 2 ? 0.5 : 1),
                     sqft: Math.round(1800 + Math.random() * 1200),
-                    image: unsplashImages[index % unsplashImages.length]
+                    image: unsplashImages[index % unsplashImages.length],
+                    lat: centerLat + latOffset,
+                    lon: centerLon + lonOffset
                 };
             });
 
