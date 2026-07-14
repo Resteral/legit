@@ -675,6 +675,7 @@ function handleSignup(event) {
     });
 
     const timeline = document.getElementById('property-timeline').value;
+    const photoUrl = document.getElementById('property-photo-url').value.trim();
 
     const newLead = {
         id: `lead-${Date.now()}`,
@@ -692,6 +693,7 @@ function handleSignup(event) {
         dispatches: {},
         completedSubtasks: [],
         timeline: timeline,
+        photoUrl: photoUrl,
         bids: []
     };
 
@@ -709,6 +711,7 @@ function handleSignup(event) {
         owner: name,
         email: email,
         timeline: timeline,
+        photoUrl: photoUrl,
         timestamp: new Date().toLocaleString(),
         isLeadProject: true
     };
@@ -5074,6 +5077,7 @@ function handleHomeownerJobSubmit(event) {
     const owner = document.getElementById('job-owner').value.trim();
     const email = document.getElementById('job-email').value.trim();
     const timeline = document.getElementById('job-timeline').value;
+    const photoUrl = document.getElementById('job-photo-url').value.trim();
 
     const newRequest = {
         id: `req-${Date.now()}`,
@@ -5084,6 +5088,7 @@ function handleHomeownerJobSubmit(event) {
         owner: owner,
         email: email,
         timeline: timeline,
+        photoUrl: photoUrl,
         bids: [],
         timestamp: new Date().toLocaleString()
     };
@@ -5124,6 +5129,10 @@ function renderJobRequestsFeed() {
             </div>
             <div style="font-weight:600; color:var(--warning); text-transform:capitalize; margin-bottom:0.25rem;">Required Trade: ${req.trade}</div>
             <div style="font-size:0.7rem; color:var(--primary); font-weight:700; margin-bottom:0.4rem;">Timeline: ${req.timeline || 'Flexible / Planning'}</div>
+            ${req.photoUrl ? `
+            <div style="height:120px; width:100%; border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.05); margin-bottom:0.5rem; cursor:pointer;" onclick="openImageWindow('${req.photoUrl}')">
+                <img src="${req.photoUrl}" style="width:100%; height:100%; object-fit:cover;">
+            </div>` : ''}
             <p style="color:var(--text-muted); margin:0 0 0.5rem 0; line-height:1.2;">"${req.desc}"</p>
             <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:0.7rem; border-top:1px solid rgba(255,255,255,0.03); padding-top:0.4rem; align-items:center;">
                 <span>By: ${req.owner} • ${bidCount} Bids</span>

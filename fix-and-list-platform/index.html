@@ -253,6 +253,10 @@
                                 <option value="Flexible / Planning">Flexible / Planning</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label for="property-photo-url">Photo of Property / Renovation Area (Image URL) <span style="color:var(--danger);">*</span></label>
+                            <input type="url" id="property-photo-url" required placeholder="Paste a link to a photo of the area needing work..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                        </div>
                         <div class="form-check-group">
                             <input type="checkbox" id="allow-emails-checkbox" checked>
                             <label for="allow-emails-checkbox">Subscribe to automated email alerts (updates on property valuation, contractor dispatches, and active listing statuses).</label>
@@ -530,6 +534,10 @@
                             <div class="form-group">
                                 <label for="job-desc">Work Description / Details</label>
                                 <textarea id="job-desc" rows="3" required placeholder="e.g. Need to rewire kitchen outlets and add dedicated microwave circuit..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="job-photo-url">Photo of Problem / Work Needed (Image URL) <span style="color:var(--danger);">*</span></label>
+                                <input type="url" id="job-photo-url" required placeholder="Paste a link to a photo showing the issue (e.g. on Imgur or Unsplash)..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
                             </div>
                             <div class="form-group">
                                 <label for="job-owner">Your Name</label>
@@ -2067,6 +2075,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Lead successfully created!</div>
 
-    <script src="app.js?v=29"></script>
+    <script src="app.js?v=30"></script>
 </body>
 </html>
