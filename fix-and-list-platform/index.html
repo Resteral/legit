@@ -553,9 +553,15 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="campaign-recipient-email">Recipient / Target Email Address</label>
-                                    <input type="email" id="campaign-recipient-email" placeholder="e.g. seller@homemail.com">
-                                </div>
+                                     <label for="campaign-target-select">Select Listing / Map Prospect</label>
+                                     <select id="campaign-target-select" onchange="onDripTargetChange()" style="background:rgba(255,255,255,0.01); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; font-size:0.8rem; width:100%; box-sizing:border-box;">
+                                         <option value="">-- Choose Target --</option>
+                                     </select>
+                                 </div>
+                                 <div class="form-group">
+                                     <label for="campaign-recipient-email">Recipient / Target Email Address</label>
+                                     <input type="email" id="campaign-recipient-email" placeholder="e.g. seller@homemail.com">
+                                 </div>
                                 <div class="form-group">
                                     <label for="campaign-subject-input">Outbound Subject Line</label>
                                     <input type="text" id="campaign-subject-input" style="background:rgba(255,255,255,0.01);">
@@ -1546,6 +1552,6 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Lead successfully created!</div>
 
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
 </body>
 </html>

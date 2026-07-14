@@ -879,6 +879,8 @@ function renderPipelineBoard() {
     });
 
     lucide.createIcons();
+    populateDripTargetDropdown();
+    populateAdLeadSelect();
 }
 
 let draggedLeadId = null;
@@ -1056,6 +1058,7 @@ function renderProspectsList() {
         listContainer.appendChild(item);
     });
     lucide.createIcons();
+    populateDripTargetDropdown();
 }
 
 function importProspectToLead(propId) {
@@ -3721,9 +3724,26 @@ function updateCampaignTemplatePreview() {
     const type = document.getElementById('campaign-template-select').value;
     const template = CAMPAIGN_TEMPLATES[type];
     
-    // Choose active lead address or fallback placeholder
-    const lead = leads.find(l => l.id === currentSelectedLeadId) || leads[0];
-    const addr = lead ? lead.address : "123 Main St";
+    // Check campaign target dropdown selection
+    const targetSelect = document.getElementById('campaign-target-select');
+    let addr = "123 Main St";
+    
+    if (targetSelect && targetSelect.value) {
+        const val = targetSelect.value;
+        const parts = val.split(':');
+        const targetType = parts[0];
+        const targetId = parts[1];
+        if (targetType === 'lead') {
+            const targetLead = leads.find(l => l.id === targetId);
+            if (targetLead) addr = targetLead.address;
+        } else if (targetType === 'prospect') {
+            const targetProspect = prospects.find(p => p.id === targetId);
+            if (targetProspect) addr = targetProspect.address;
+        }
+    } else {
+        const lead = leads.find(l => l.id === currentSelectedLeadId) || leads[0];
+        if (lead) addr = lead.address;
+    }
 
     const subject = template.subject.replace(/{Address}/g, addr);
     const body = template.body.replace(/{Address}/g, addr);
@@ -4220,4 +4240,68 @@ function sendTestWebhookPayload() {
             if (res.ok) showToast("Contract signature payload sent successfully!");
         }).catch(err => showToast("Contract error: " + err.message));
     }
+}
+
+function populateDripTargetDropdown() {
+    const targetSelect = document.getElementById('campaign-target-select');
+    if (!targetSelect) return;
+    
+    const currentValue = targetSelect.value;
+    targetSelect.innerHTML = '<option value="">-- Choose Target --</option>';
+
+    // Add leads
+    if (leads.length > 0) {
+        const optGroupLeads = document.createElement('optgroup');
+        optGroupLeads.label = "Active Listings / Leads";
+        leads.forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = `lead:${l.id}`;
+            opt.innerText = `${l.address} (${l.name})`;
+            optGroupLeads.appendChild(opt);
+        });
+        targetSelect.appendChild(optGroupLeads);
+    }
+
+    // Add prospects
+    if (prospects.length > 0) {
+        const optGroupProspects = document.createElement('optgroup');
+        optGroupProspects.label = "Map Search Prospects";
+        prospects.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = `prospect:${p.id}`;
+            opt.innerText = `${p.address} (${p.owner})`;
+            optGroupProspects.appendChild(opt);
+        });
+        targetSelect.appendChild(optGroupProspects);
+    }
+
+    // Restore previous selection if still exists
+    targetSelect.value = currentValue;
+}
+
+function onDripTargetChange() {
+    const targetSelect = document.getElementById('campaign-target-select');
+    if (!targetSelect) return;
+    
+    const val = targetSelect.value;
+    const recipientInput = document.getElementById('campaign-recipient-email');
+    if (!val) {
+        recipientInput.value = '';
+        updateCampaignTemplatePreview();
+        return;
+    }
+
+    const parts = val.split(':');
+    const targetType = parts[0];
+    const targetId = parts[1];
+    if (targetType === 'lead') {
+        const targetLead = leads.find(l => l.id === targetId);
+        if (targetLead) recipientInput.value = targetLead.email || '';
+    } else if (targetType === 'prospect') {
+        const targetProspect = prospects.find(p => p.id === targetId);
+        if (targetProspect) recipientInput.value = targetProspect.email || '';
+    }
+
+    // Refresh email preview address
+    updateCampaignTemplatePreview();
 }
