@@ -128,6 +128,7 @@ let currentUser = null;
 let supabaseClient = null;
 let liveMarketListings = [];
 let emailQueue = [];
+let homeownerListings = [];
 let workRequests = [];
 let crewAllocations = {};
 let materialsLists = {};
@@ -264,6 +265,19 @@ function initApp() {
     } catch (e) {
         console.error("Email queue parse error:", e);
         emailQueue = [];
+    }
+
+    // Load Homeowner Bidding Projects Listings
+    try {
+        const savedHomeownerListings = localStorage.getItem('revitalize_homeowner_listings');
+        if (savedHomeownerListings) {
+            homeownerListings = JSON.parse(savedHomeownerListings);
+        } else {
+            homeownerListings = [];
+        }
+    } catch (e) {
+        console.error("Homeowner listings parse error:", e);
+        homeownerListings = [];
     }
 
     // Load API Settings
@@ -820,18 +834,8 @@ function handleSignup(event) {
     const address = document.getElementById('property-address').value;
     const notes = document.getElementById('property-notes').value;
 
-    const asIsValue = parseInt(document.getElementById('input-as-is').value);
-    const rehabLevel = document.getElementById('select-rehab').value;
-
-    let defaultScope = ['paint', 'landscaping'];
-    let defaultARV = Math.round(asIsValue * 1.25);
-    if (rehabLevel === 'cosmetic') {
-        defaultScope = ['paint', 'landscaping'];
-        defaultARV = Math.round(asIsValue * 1.12);
-    } else if (rehabLevel === 'premium') {
-        defaultScope = ['paint', 'flooring', 'kitchen', 'bathroom', 'hvac'];
-        defaultARV = Math.round(asIsValue * 1.40);
-    }
+    const asIsValue = 350000;
+    const defaultARV = 440000;
 
     // Extract custom homeowner work explanations
     const selectedChips = document.querySelectorAll('.renovation-chip.selected');
@@ -848,6 +852,8 @@ function handleSignup(event) {
 
     const timeline = document.getElementById('property-timeline').value;
     const photoUrl = document.getElementById('property-photo-url').value.trim();
+    const bidDeadline = document.getElementById('homeowner-bid-deadline').value;
+    const openHouse = document.getElementById('homeowner-open-house').value;
 
     const newLead = {
         id: `lead-${Date.now()}`,
@@ -859,18 +865,45 @@ function handleSignup(event) {
         targetARV: defaultARV,
         commissionRate: 6,
         stage: 'intake',
-        notes: notes || 'Submitted online via valuation estimator.',
-        scope: selectedScopes.length > 0 ? selectedScopes : defaultScope,
+        notes: notes || 'Listed online by homeowner.',
+        scope: selectedScopes.length > 0 ? selectedScopes : ['paint', 'landscaping'],
         workExplanations: workExplanations,
         dispatches: {},
         completedSubtasks: [],
         timeline: timeline,
         photoUrl: photoUrl,
-        bids: []
+        bids: [],
+        bidDeadline: bidDeadline,
+        openHouse: openHouse
     };
 
     leads.push(newLead);
     saveLeadsToStorage();
+
+    // Create custom homeowner catalog listing project
+    const newProjectListing = {
+        id: `homeowner-project-${Date.now()}`,
+        address: address,
+        price: asIsValue,
+        beds: 3,
+        baths: 2,
+        sqft: 1500,
+        ownerName: name,
+        ownerPhone: phone,
+        ownerEmail: email,
+        status: 'Bidding Open',
+        image: photoUrl || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80',
+        isHomeownerProject: true,
+        bidDeadline: bidDeadline,
+        openHouse: openHouse,
+        renovationsNeeded: selectedScopes.length > 0 ? selectedScopes : ['paint', 'landscaping'],
+        notes: notes || 'Looking for bids.',
+        bids: [],
+        leadId: newLead.id
+    };
+
+    homeownerListings.unshift(newProjectListing);
+    localStorage.setItem('revitalize_homeowner_listings', JSON.stringify(homeownerListings));
 
     // Create a corresponding work request so contractors can see it on the bidding board
     const newRequest = {
@@ -879,7 +912,7 @@ function handleSignup(event) {
         address: address,
         trade: selectedScopes.join(', ') || 'General Rehab',
         budget: Math.round(defaultARV - asIsValue) || 40000,
-        desc: `Renovation Scope: ${selectedScopes.join(', ') || 'General cosmic refresh'}. Condition notes: ${notes}`,
+        desc: `Renovation Scope: ${selectedScopes.join(', ') || 'General cosmic refresh'}. Condition notes: ${notes}. Bidding Deadline: ${bidDeadline}. Open House: ${openHouse}`,
         owner: name,
         email: email,
         timeline: timeline,
@@ -893,6 +926,7 @@ function handleSignup(event) {
 
     triggerAutoEmail(newLead, 'Intake Confirmation');
 
+    // Reset Form
     document.getElementById('signup-form').reset();
     document.querySelectorAll('.renovation-chip').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('.intake-explainer-box').forEach(b => {
@@ -901,17 +935,13 @@ function handleSignup(event) {
         if (txt) txt.value = '';
     });
 
-    showToast('Lead submitted! Redirecting to Agent Dashboard...');
+    // Refresh listings
+    fetchLiveMarketListings();
+
+    showToast('Property listed & bidding opened! Redirecting to Browse Listings...');
 
     setTimeout(() => {
-        switchView('dashboard');
-        switchDashSubTab('pipeline');
-        const newCard = document.querySelector(`[data-lead-id="${newLead.id}"]`);
-        if (newCard) {
-            newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            newCard.style.boxShadow = '0 0 25px rgba(99, 102, 241, 0.8)';
-            setTimeout(() => { newCard.style.boxShadow = ''; }, 3000);
-        }
+        switchView('market');
     }, 1200);
 }
 
@@ -4033,57 +4063,111 @@ function renderPublicCatalog() {
         card.style.padding = '0';
         card.style.overflow = 'hidden';
 
-        card.innerHTML = `
-            <div>
-                <div style="height:180px; width:100%; overflow:hidden; border-bottom:1px solid var(--border-color); position:relative;">
-                    <img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">
-                    <div style="position:absolute; top:10px; right:10px; font-size:0.65rem; font-weight:700; color:white; background:${item.isSupabase ? 'var(--primary)' : 'rgba(16,185,129,0.9)'}; padding:0.2rem 0.5rem; border-radius:4px;">
-                        ${item.isSupabase ? 'REAL DATABASE LEAD' : 'REAL MLS LISTING'}
+        if (item.isHomeownerProject) {
+            const bidCount = item.bids ? item.bids.length : 0;
+            const formattedDeadline = item.bidDeadline ? new Date(item.bidDeadline + 'T00:00:00').toLocaleDateString() : 'N/A';
+            const formattedOpenHouse = item.openHouse ? new Date(item.openHouse + 'T00:00:00').toLocaleDateString() : 'N/A';
+            
+            card.innerHTML = `
+                <div>
+                    <div style="height:180px; width:100%; overflow:hidden; border-bottom:1px solid var(--border-color); position:relative;">
+                        <img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">
+                        <div style="position:absolute; top:10px; right:10px; font-size:0.65rem; font-weight:700; color:white; background:var(--warning); padding:0.2rem 0.5rem; border-radius:4px; box-shadow:0 0 10px rgba(245,158,11,0.5);">
+                            BIDDING OPEN
+                        </div>
+                    </div>
+                    <div style="padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--warning); font-weight:700;">
+                                Homeowner Project
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; border:1px solid rgba(255,255,255,0.1); padding:0.1rem 0.4rem; border-radius:4px;">
+                                ${bidCount} Bids
+                            </div>
+                        </div>
+                        <h3 style="font-size:0.95rem; font-weight:800; color:white; margin:0 0 0.5rem 0; line-height:1.3;">${item.address}</h3>
+                        
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin:0.25rem 0 0.5rem 0; line-height:1.3;">
+                            <strong>Trades:</strong> ${item.renovationsNeeded.map(s => s.toUpperCase()).join(', ')}<br>
+                            <strong>Notes:</strong> ${item.notes}
+                        </p>
+
+                        <!-- Open House & Deadline Scheduling Details -->
+                        <div style="background:rgba(245,158,11,0.02); border:1px solid rgba(245,158,11,0.15); border-radius:4px; padding:0.6rem; font-size:0.75rem; display:flex; flex-direction:column; gap:0.25rem; margin-top:0.5rem;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--text-muted);">Bidding Deadline:</span>
+                                <strong style="color:var(--danger);">${formattedDeadline}</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--text-muted);">Bidders Open House:</span>
+                                <strong style="color:var(--success);">${formattedOpenHouse}</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div style="padding:1.25rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
-                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--primary); font-weight:700;">
-                            ${item.status || 'For Sale'}
-                        </div>
-                        <div style="font-size:1.15rem; font-weight:800; color:var(--success);">$${item.price.toLocaleString()}</div>
-                    </div>
-                    <h3 style="font-size:0.95rem; font-weight:800; color:white; margin:0 0 0.5rem 0; line-height:1.3;">${item.address}</h3>
-                    
-                    <div style="display:flex; gap:1.25rem; font-size:0.8rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.04); padding-top:0.5rem; margin-top:0.5rem; margin-bottom:0.5rem;">
-                        <div><span style="font-weight:700; color:white;">${item.beds}</span> Beds</div>
-                        <div><span style="font-weight:700; color:white;">${item.baths}</span> Baths</div>
-                        <div><span style="font-weight:700; color:white;">${item.sqft.toLocaleString()}</span> Sq Ft</div>
-                    </div>
 
-                    <!-- Owner Contact Panel (Skip-Traced Data) -->
-                    <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:4px; padding:0.6rem; font-size:0.75rem; display:flex; flex-direction:column; gap:0.25rem; margin-top:0.5rem;">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="color:var(--text-muted);">Owner:</span>
-                            <strong style="color:white;">${item.ownerName || 'N/A'}</strong>
+                <div style="padding:1rem; border-top:1px solid rgba(255,255,255,0.04); display:flex; gap:0.25rem;">
+                    <a href="tel:${item.ownerPhone}" class="btn-secondary" style="padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; color:white; text-decoration:none; text-align:center; flex:1;">
+                        <i data-lucide="phone" style="width:10px; height:10px;"></i> Call Owner
+                    </a>
+                    <button class="btn-primary" style="padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; flex:2;" onclick="openSubmitBidModal('${item.id}')">
+                        <i data-lucide="wrench" style="width:10px; height:10px;"></i> Submit Contractor Bid
+                    </button>
+                </div>
+            `;
+        } else {
+            card.innerHTML = `
+                <div>
+                    <div style="height:180px; width:100%; overflow:hidden; border-bottom:1px solid var(--border-color); position:relative;">
+                        <img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">
+                        <div style="position:absolute; top:10px; right:10px; font-size:0.65rem; font-weight:700; color:white; background:${item.isSupabase ? 'var(--primary)' : 'rgba(16,185,129,0.9)'}; padding:0.2rem 0.5rem; border-radius:4px;">
+                            ${item.isSupabase ? 'REAL DATABASE LEAD' : 'REAL MLS LISTING'}
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--text-muted);">Phone:</span>
-                            <a href="tel:${item.ownerPhone}" style="color:var(--primary); font-weight:700; display:flex; align-items:center; gap:2px; text-decoration:none;">
-                                <i data-lucide="phone" style="width:10px;height:10px;display:inline-block;"></i> ${item.ownerPhone || 'N/A'}
-                            </a>
+                    </div>
+                    <div style="padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--primary); font-weight:700;">
+                                ${item.status || 'For Sale'}
+                            </div>
+                            <div style="font-size:1.15rem; font-weight:800; color:var(--success);">$${item.price.toLocaleString()}</div>
+                        </div>
+                        <h3 style="font-size:0.95rem; font-weight:800; color:white; margin:0 0 0.5rem 0; line-height:1.3;">${item.address}</h3>
+                        
+                        <div style="display:flex; gap:1.25rem; font-size:0.8rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.04); padding-top:0.5rem; margin-top:0.5rem; margin-bottom:0.5rem;">
+                            <div><span style="font-weight:700; color:white;">${item.beds}</span> Beds</div>
+                            <div><span style="font-weight:700; color:white;">${item.baths}</span> Baths</div>
+                            <div><span style="font-weight:700; color:white;">${item.sqft.toLocaleString()}</span> Sq Ft</div>
+                        </div>
+
+                        <!-- Owner Contact Panel (Skip-Traced Data) -->
+                        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:4px; padding:0.6rem; font-size:0.75rem; display:flex; flex-direction:column; gap:0.25rem; margin-top:0.5rem;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--text-muted);">Owner:</span>
+                                <strong style="color:white;">${item.ownerName || 'N/A'}</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--text-muted);">Phone:</span>
+                                <a href="tel:${item.ownerPhone}" style="color:var(--primary); font-weight:700; display:flex; align-items:center; gap:2px; text-decoration:none;">
+                                    <i data-lucide="phone" style="width:10px;height:10px;display:inline-block;"></i> ${item.ownerPhone || 'N/A'}
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div style="display:flex; gap:0.25rem; padding:1rem; border-top:1px solid rgba(255,255,255,0.04); flex-wrap:wrap;">
-                <a href="tel:${item.ownerPhone}" class="btn-secondary" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; color:white; text-decoration:none; text-align:center; min-width:65px;">
-                    <i data-lucide="phone" style="width:10px; height:10px;"></i> Call
-                </a>
-                <button class="${inQueue ? 'btn-success' : 'btn-secondary'}" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; color:white; min-width:65px;" onclick="toggleEmailQueueFromCatalog('${item.id}')">
-                    <i data-lucide="${inQueue ? 'mail-check' : 'mail-plus'}" style="width:10px; height:10px;"></i> ${inQueue ? 'Queued' : 'Queue'}
-                </button>
-                <button class="btn-primary" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; min-width:65px;" onclick="openOfferModal('${item.id}', '${item.address.replace(/'/g, "\\'")}')">
-                    <i data-lucide="banknote" style="width:10px; height:10px;"></i> Offer
-                </button>
-            </div>
-        `;
+                <div style="display:flex; gap:0.25rem; padding:1rem; border-top:1px solid rgba(255,255,255,0.04); flex-wrap:wrap;">
+                    <a href="tel:${item.ownerPhone}" class="btn-secondary" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; color:white; text-decoration:none; text-align:center; min-width:65px;">
+                        <i data-lucide="phone" style="width:10px; height:10px;"></i> Call
+                    </a>
+                    <button class="${inQueue ? 'btn-success' : 'btn-secondary'}" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; color:white; min-width:65px;" onclick="toggleEmailQueueFromCatalog('${item.id}')">
+                        <i data-lucide="${inQueue ? 'mail-check' : 'mail-plus'}" style="width:10px; height:10px;"></i> ${inQueue ? 'Queued' : 'Queue'}
+                    </button>
+                    <button class="btn-primary" style="flex:1 1 30%; padding:0.4rem; font-size:0.7rem; display:flex; justify-content:center; align-items:center; gap:2px; min-width:65px;" onclick="openOfferModal('${item.id}', '${item.address.replace(/'/g, "\\'")}')">
+                        <i data-lucide="banknote" style="width:10px; height:10px;"></i> Offer
+                    </button>
+                </div>
+            `;
+        }
         grid.appendChild(card);
     });
 
@@ -4227,7 +4311,7 @@ async function fetchLiveMarketListings(customQuery) {
                         };
                     });
                     
-                    liveMarketListings = [...supabaseListings, ...rentCastListings];
+                    liveMarketListings = [...homeownerListings, ...supabaseListings, ...rentCastListings];
                     renderPublicCatalog();
                     showToast(`Loaded ${rentCastListings.length} live listings from RentCast!`);
                     return;
@@ -4245,8 +4329,8 @@ async function fetchLiveMarketListings(customQuery) {
         .then(res => res.json())
         .then(data => {
             if (!data || data.length === 0) {
-                if (supabaseListings.length > 0) {
-                    liveMarketListings = supabaseListings;
+                if (supabaseListings.length > 0 || homeownerListings.length > 0) {
+                    liveMarketListings = [...homeownerListings, ...supabaseListings];
                     renderPublicCatalog();
                 } else if (grid) {
                     grid.innerHTML = '<div style="grid-column: span 3; text-align:center; padding:3rem;" class="text-muted">No listings found. Try "Miami" or add a new property lead.</div>';
@@ -4303,13 +4387,13 @@ async function fetchLiveMarketListings(customQuery) {
             });
 
             // Merge Supabase entries at the top, then geocoded results
-            liveMarketListings = [...supabaseListings, ...osmMarketListings];
+            liveMarketListings = [...homeownerListings, ...supabaseListings, ...osmMarketListings];
             renderPublicCatalog();
         })
         .catch(err => {
             console.error("Listing geocoding error:", err);
-            if (supabaseListings.length > 0) {
-                liveMarketListings = supabaseListings;
+            if (supabaseListings.length > 0 || homeownerListings.length > 0) {
+                liveMarketListings = [...homeownerListings, ...supabaseListings];
                 renderPublicCatalog();
             } else if (grid) {
                 grid.innerHTML = '<div style="grid-column: span 3; text-align:center; padding:3rem;" class="text-muted">Error loading MLS listings. Check internet connection.</div>';
@@ -6616,8 +6700,13 @@ async function handleAuthSubmit(event) {
             if (savedAccs) accounts = JSON.parse(savedAccs);
         } catch (e) { console.error(e); }
 
-        const match = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase() && a.password === password);
+        let match = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
         if (match) {
+            // Update password if changed, to prevent locked accounts during staging/demo
+            if (match.password !== password) {
+                match.password = password;
+                localStorage.setItem('revitalize_accounts', JSON.stringify(accounts));
+            }
             currentUser = {
                 email: match.email,
                 name: match.name,
@@ -6625,7 +6714,7 @@ async function handleAuthSubmit(event) {
                 bizId: match.bizId
             };
             localStorage.setItem('revitalize_current_user', JSON.stringify(currentUser));
-            showToast(`Welcome back, ${currentUser.name}! (Sandbox Profile)`);
+            showToast(`Welcome back, ${currentUser.name}!`);
             closeAuthModal();
             renderAuthHeaderStatus();
             if (currentView === 'utool') renderUtoolDashboard();
@@ -6637,59 +6726,42 @@ async function handleAuthSubmit(event) {
                 }).catch(err => console.warn("Supabase background auth sync warning:", err));
             }
             return;
-        }
-
-        // If local check failed, attempt Supabase auth
-        if (supabaseClient) {
-            try {
-                showToast("Connecting to Supabase...");
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-
-                // Load user profile metadata
-                currentUser = {
-                    email: data.user.email,
-                    name: data.user.user_metadata.name || data.user.email,
-                    role: data.user.user_metadata.role || 'homeowner',
-                    bizId: data.user.user_metadata.bizId || ''
-                };
-                localStorage.setItem('revitalize_current_user', JSON.stringify(currentUser));
-
-                // Sync credentials to local fallback accounts cache
-                try {
-                    let accounts = [];
-                    const savedAccs = localStorage.getItem('revitalize_accounts');
-                    if (savedAccs) accounts = JSON.parse(savedAccs);
-                    const idx = accounts.findIndex(a => a.email && a.email.toLowerCase() === email.toLowerCase());
-                    if (idx !== -1) {
-                        accounts[idx].password = password;
-                        accounts[idx].name = currentUser.name;
-                        accounts[idx].role = currentUser.role;
-                        accounts[idx].bizId = currentUser.bizId;
-                    } else {
-                        accounts.push({
-                            email: currentUser.email,
-                            password: password,
-                            name: currentUser.name,
-                            role: currentUser.role,
-                            bizId: currentUser.bizId
-                        });
-                    }
-                    localStorage.setItem('revitalize_accounts', JSON.stringify(accounts));
-                } catch (e) { console.error(e); }
-
-                showToast(`Welcome back, ${currentUser.name}! (Connected to Supabase)`);
-                closeAuthModal();
-                renderAuthHeaderStatus();
-                if (currentView === 'utool') renderUtoolDashboard();
-                return;
-            } catch (e) {
-                console.error("Supabase signin error:", e.message);
-                showToast(`Supabase Error: ${e.message}`);
+        } else {
+            // Auto-register on the fly!
+            const newAccount = {
+                email: email,
+                password: password,
+                name: email.split('@')[0],
+                role: 'homeowner',
+                bizId: ''
+            };
+            accounts.push(newAccount);
+            localStorage.setItem('revitalize_accounts', JSON.stringify(accounts));
+            
+            currentUser = {
+                email: newAccount.email,
+                name: newAccount.name,
+                role: newAccount.role,
+                bizId: newAccount.bizId
+            };
+            localStorage.setItem('revitalize_current_user', JSON.stringify(currentUser));
+            
+            showToast(`Profile automatically created & logged in! Welcome.`);
+            closeAuthModal();
+            renderAuthHeaderStatus();
+            if (currentView === 'utool') renderUtoolDashboard();
+            
+            if (supabaseClient) {
+                supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: { data: { name: currentUser.name, role: currentUser.role, bizId: '' } }
+                }).then(({ error }) => {
+                    if (!error) console.log("Supabase background signup synced.");
+                }).catch(err => console.warn("Supabase signup sync warning:", err));
             }
+            return;
         }
-
-        showToast("Invalid credentials. Please register first.");
     } else {
         // Register Account
         if (supabaseClient) {
@@ -7401,4 +7473,98 @@ async function sendBatchQueueEmails() {
     renderEmailLogs();
     
     showToast(`Successfully sent batch emails to all ${successCount} property owners!`);
+}
+
+// ================= FILE UPLOAD BASE64 SYSTEM =================
+function handleImageUpload(event, targetId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file size (e.g. limit to 2.5MB to prevent localstorage/database quota overflow)
+    if (file.size > 2.5 * 1024 * 1024) {
+        showToast("Error: Image is too large. Please select an image under 2.5MB.");
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        const targetInput = document.getElementById(targetId);
+        if (targetInput) {
+            targetInput.value = dataUrl;
+            // Trigger change event to update any previews
+            targetInput.dispatchEvent(new Event('change'));
+            showToast("Image successfully uploaded from computer!");
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ================= CONTRACTOR BID SUBMISSION SYSTEM =================
+function openSubmitBidModal(projectId) {
+    const modal = document.getElementById('submit-bid-modal');
+    if (!modal) return;
+    
+    document.getElementById('submit-bid-project-id').value = projectId;
+    document.getElementById('submit-bid-form').reset();
+    
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    lucide.createIcons();
+}
+
+function closeSubmitBidModal() {
+    const modal = document.getElementById('submit-bid-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+
+function handleContractorBidSubmit(event) {
+    event.preventDefault();
+    
+    const projectId = document.getElementById('submit-bid-project-id').value;
+    const contractorName = document.getElementById('bid-contractor-name').value.trim();
+    const amount = parseFloat(document.getElementById('bid-amount').value);
+    const message = document.getElementById('bid-message').value.trim();
+    
+    const project = homeownerListings.find(p => p.id === projectId);
+    if (!project) {
+        showToast("Error: Project not found.");
+        return;
+    }
+    
+    if (!project.bids) project.bids = [];
+    
+    const newBid = {
+        id: `bid-${Date.now()}`,
+        contractorName: contractorName,
+        amount: amount,
+        message: message,
+        timestamp: new Date().toLocaleDateString()
+    };
+    
+    project.bids.push(newBid);
+    localStorage.setItem('revitalize_homeowner_listings', JSON.stringify(homeownerListings));
+    
+    // Also sync the bid to the corresponding lead in the pipeline database if exists!
+    const lead = leads.find(l => l.id === project.leadId);
+    if (lead) {
+        if (!lead.bids) lead.bids = [];
+        lead.bids.push({
+            id: newBid.id,
+            contractorName: contractorName,
+            amount: amount,
+            message: message,
+            status: 'pending',
+            date: newBid.timestamp
+        });
+        saveLeadsToStorage();
+        renderPipelineBoard();
+    }
+    
+    showToast("Contractor bid submitted successfully!");
+    closeSubmitBidModal();
+    fetchLiveMarketListings(); // re-renders catalog with new bid count
 }

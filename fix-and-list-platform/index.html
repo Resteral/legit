@@ -55,8 +55,8 @@
                 <p class="hero-subtitle"><i>Invest</i> in our <u>Skills</u> to create <strong>Capital</strong></p>
             </div>
 
-            <!-- Before/After Slider & Calculator Grid -->
-            <div class="portal-grid">
+            <!-- Visual Renovation Impact Slider Wrapper -->
+            <div style="max-width: 850px; margin: 0 auto 2.5rem auto;">
                 <!-- Visual Renovation Impact Slider -->
                 <div class="glass-card visual-slider-card">
                     <div class="card-header">
@@ -111,63 +111,6 @@
                         </div>
                         <div class="slider-desc">
                             <p>Drag the slider to see how cosmetic upgrades like quartz countertops, marble tile backsplashes, and contemporary finishes elevate market appeal.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ROI Calculator -->
-                <div class="glass-card calculator-card">
-                    <div class="card-header">
-                        <i data-lucide="calculator" class="accent-text"></i>
-                        <h2>Equity & Profit Estimator</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="input-group">
-                            <div class="label-wrapper">
-                                <label for="input-as-is">Estimated As-Is Value</label>
-                                <span class="slider-val" id="val-as-is">$350,000</span>
-                            </div>
-                            <input type="range" id="input-as-is" min="150000" max="1000000" step="10000" value="350000" oninput="calculateROI()">
-                            <div class="range-limits">
-                                <span>$150k</span>
-                                <span>$1M</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <div class="label-wrapper">
-                                <label for="select-rehab">Renovation Level</label>
-                            </div>
-                            <select id="select-rehab" onchange="calculateROI()">
-                                <option value="cosmetic">Cosmetic Refresh (Paint, Landscaping, Lights) - ~$15k</option>
-                                <option value="standard" selected>Standard Upgrade (Kitchen, Bathrooms, Flooring) - ~$40k</option>
-                                <option value="premium">Premium Overhaul (Full Kitchen/Bath, HVAC, Modern Styling) - ~$75k</option>
-                            </select>
-                        </div>
-
-                        <div class="calculator-results">
-                            <div class="result-row total-arv">
-                                <span>Projected New Value (ARV)</span>
-                                <span class="valHighlight" id="calc-arv">$440,000</span>
-                            </div>
-                            <div class="results-grid">
-                                <div class="mini-result">
-                                    <span class="label">Discounted Rehab Cost</span>
-                                    <span class="value" id="calc-rehab-cost">$40,000</span>
-                                </div>
-                                <div class="mini-result">
-                                    <span class="label">As-Is Sale Net Cash</span>
-                                    <span class="value text-muted" id="calc-asis-net">$329,000</span>
-                                </div>
-                                <div class="mini-result">
-                                    <span class="label">Revitalize Sale Net Cash</span>
-                                    <span class="value text-success" id="calc-revitalize-net">$373,600</span>
-                                </div>
-                                <div class="mini-result highlighted-profit">
-                                    <span class="label">Your Extra Profit Lift</span>
-                                    <span class="value glow-text" id="calc-extra-profit">+$44,600</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,16 +203,34 @@
                                 <option value="Flexible / Planning">Flexible / Planning</option>
                             </select>
                         </div>
+                        <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div class="form-group">
+                                <label for="homeowner-bid-deadline">Bidding Deadline Date <span style="color:var(--danger);">*</span></label>
+                                <input type="date" id="homeowner-bid-deadline" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; font-family:inherit;">
+                            </div>
+                            <div class="form-group">
+                                <label for="homeowner-open-house">Open House Date for Bidders <span style="color:var(--danger);">*</span></label>
+                                <input type="date" id="homeowner-open-house" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; font-family:inherit;">
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
-                            <label for="property-photo-url">Photo of Property / Renovation Area (Image URL) <span style="color:var(--danger);">*</span></label>
-                            <input type="url" id="property-photo-url" required placeholder="Paste a link to a photo of the area needing work..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                            <label for="property-photo-url">Pictures of the project / Renovation Area (Image URL / File Upload) <span style="color:var(--danger);">*</span></label>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <input type="text" id="property-photo-url" required placeholder="Paste a link or upload a file..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; flex-grow:1;">
+                                <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+                                <label class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem; cursor:pointer; color:white; border-radius:4px; display:flex; align-items:center; gap:4px; margin:0; flex-shrink:0;">
+                                    <i data-lucide="upload" style="width:12px;height:12px;"></i> Upload
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(event, 'property-photo-url')" style="display:none;">
+                                </label>
+                            </div>
                         </div>
                         <div class="form-check-group">
                             <input type="checkbox" id="allow-emails-checkbox" checked>
                             <label for="allow-emails-checkbox">Subscribe to automated email alerts (updates on property valuation, contractor dispatches, and active listing statuses).</label>
                         </div>
                         <button type="submit" class="btn-primary" style="margin-top:0.5rem; padding: 0.85rem;">
-                            <span>Get My Discounted Rehab Quote</span>
+                            <span>List Property & Open Bidding</span>
                             <i data-lucide="arrow-right"></i>
                         </button>
                     </form>
@@ -2238,8 +2199,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="contract-before-photo">Before Photo (Image URL) <span style="color:var(--danger);">*</span></label>
-                        <input type="url" id="contract-before-photo" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                        <label for="contract-before-photo">Before Photo (Image URL / File Upload) <span style="color:var(--danger);">*</span></label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" id="contract-before-photo" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; flex-grow:1;">
+                            <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+                            <label class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem; cursor:pointer; color:white; border-radius:4px; display:flex; align-items:center; gap:4px; margin:0; flex-shrink:0;">
+                                <i data-lucide="upload" style="width:12px;height:12px;"></i> Upload
+                                <input type="file" accept="image/*" onchange="handleImageUpload(event, 'contract-before-photo')" style="display:none;">
+                            </label>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -2285,8 +2253,15 @@
                     <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Upload the finished product photo to conclude the agreement, sign-off on the contract, and add the before-after showcase to your public profile.</p>
                     
                     <div class="form-group">
-                        <label for="fulfill-after-photo">After Photo (Finished Product Image URL) <span style="color:var(--danger);">*</span></label>
-                        <input type="url" id="fulfill-after-photo" required placeholder="Paste a link to the finished work photo..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                        <label for="fulfill-after-photo">After Photo (Finished Product Image URL / File Upload) <span style="color:var(--danger);">*</span></label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" id="fulfill-after-photo" required placeholder="Paste a link to the finished work photo..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; flex-grow:1;">
+                            <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+                            <label class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem; cursor:pointer; color:white; border-radius:4px; display:flex; align-items:center; gap:4px; margin:0; flex-shrink:0;">
+                                <i data-lucide="upload" style="width:12px;height:12px;"></i> Upload
+                                <input type="file" accept="image/*" onchange="handleImageUpload(event, 'fulfill-after-photo')" style="display:none;">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -2362,8 +2337,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="utool-manual-photo">Before Photo (Property Image URL)</label>
-                        <input type="url" id="utool-manual-photo" placeholder="https://images.unsplash.com/..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                        <label for="utool-manual-photo">Before Photo (Property Image URL / File Upload)</label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" id="utool-manual-photo" placeholder="https://images.unsplash.com/..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; flex-grow:1;">
+                            <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+                            <label class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem; cursor:pointer; color:white; border-radius:4px; display:flex; align-items:center; gap:4px; margin:0; flex-shrink:0;">
+                                <i data-lucide="upload" style="width:12px;height:12px;"></i> Upload
+                                <input type="file" accept="image/*" onchange="handleImageUpload(event, 'utool-manual-photo')" style="display:none;">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -2431,8 +2413,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="lead-manual-photo">Property Image URL</label>
-                        <input type="url" id="lead-manual-photo" placeholder="https://images.unsplash.com/..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                        <label for="lead-manual-photo">Property Image URL / File Upload</label>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            <input type="text" id="lead-manual-photo" placeholder="https://images.unsplash.com/..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; flex-grow:1;">
+                            <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+                            <label class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem; cursor:pointer; color:white; border-radius:4px; display:flex; align-items:center; gap:4px; margin:0; flex-shrink:0;">
+                                <i data-lucide="upload" style="width:12px;height:12px;"></i> Upload
+                                <input type="file" accept="image/*" onchange="handleImageUpload(event, 'lead-manual-photo')" style="display:none;">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -2475,9 +2464,43 @@
         </div>
     </div>
 
+    <!-- ================= CONTRACTOR BID SUBMISSION MODAL ================= -->
+    <div id="submit-bid-modal" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; z-index:2000;">
+        <div class="drawer-content mini-modal" style="max-width:400px; width:95%; padding:1.5rem;">
+            <div class="drawer-header" style="padding-bottom:0.75rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+                <h2>Submit Contractor Bid</h2>
+                <button class="btn-close" onclick="closeSubmitBidModal()"><i data-lucide="x"></i></button>
+            </div>
+            
+            <form id="submit-bid-form" onsubmit="handleContractorBidSubmit(event)">
+                <input type="hidden" id="submit-bid-project-id">
+                
+                <div class="drawer-body" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;">
+                    <div class="form-group">
+                        <label for="bid-contractor-name">Contractor / Business Name <span style="color:var(--danger);">*</span></label>
+                        <input type="text" id="bid-contractor-name" required placeholder="e.g. Elite Plumbers LLC" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                    </div>
+                    <div class="form-group">
+                        <label for="bid-amount">Bid Amount ($ USD) <span style="color:var(--danger);">*</span></label>
+                        <input type="number" id="bid-amount" required placeholder="e.g. 25000" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white;">
+                    </div>
+                    <div class="form-group">
+                        <label for="bid-message">Scope Details & Message</label>
+                        <textarea id="bid-message" rows="3" placeholder="Describe materials, warranty, or scope details..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.4rem; color:white; font-family:inherit;"></textarea>
+                    </div>
+                </div>
+
+                <div class="drawer-footer" style="margin-top:1.5rem; display:flex; gap:0.5rem;">
+                    <button type="button" class="btn-secondary" onclick="closeSubmitBidModal()" style="flex:1; color:white;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex:1;">Submit Bidding Offer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast">Lead successfully created!</div>
 
-    <script src="app.js?v=38"></script>
+    <script src="app.js?v=39"></script>
 </body>
 </html>
