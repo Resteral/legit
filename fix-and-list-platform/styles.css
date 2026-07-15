@@ -1000,7 +1000,7 @@ select option {
 }
 
 .map-container-card {
-    min-height: 500px;
+    height: 700px;
     display: flex;
     flex-direction: column;
 }
@@ -1027,7 +1027,7 @@ select option {
     position: relative;
     background: radial-gradient(circle, #0e1325 10%, #080a13 80%);
     overflow: hidden;
-    min-height: 400px;
+    height: 100%;
 }
 
 .map-grid-overlay {
@@ -1140,7 +1140,7 @@ select option {
 .list-container-card {
     display: flex;
     flex-direction: column;
-    max-height: 500px;
+    height: 700px;
 }
 
 .list-header {

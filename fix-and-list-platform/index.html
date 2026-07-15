@@ -31,9 +31,6 @@
                 <button id="btn-market" class="nav-tab" onclick="switchView('market')">
                     <i data-lucide="shopping-bag"></i> Browse Listings
                 </button>
-                <button id="btn-labor" class="nav-tab" onclick="switchView('labor')">
-                    <i data-lucide="users"></i> Browse Labor
-                </button>
                 <button id="btn-utool" class="nav-tab" onclick="switchView('utool')">
                     <i data-lucide="wrench"></i> UTool Workforce
                 </button>
@@ -838,24 +835,24 @@
                     </div>
 
                     <div class="glass-card list-container-card">
-                        <div class="list-header">
-                            <h3>Prospects in Your Area</h3>
-                            <p>Distressed properties or high-potential fix-and-lists.</p>
+                        <div class="list-header" style="padding: 1rem;">
+                            <h3 style="margin: 0; font-size: 1rem;">Prospects in Your Area</h3>
+                            <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Distressed properties or high-potential fix-and-lists.</p>
                             <!-- Address Search Bar -->
-                            <div class="map-search-bar" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                                <input type="text" id="map-search-input" placeholder="Search address to drop pin..." style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                                <button class="btn-primary" onclick="handleMapAddressSearch()" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i data-lucide="search" style="width:14px;height:14px;"></i></button>
+                            <div class="map-search-bar" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                                <input type="text" id="map-search-input" placeholder="Search address to drop pin..." style="padding: 0.4rem 0.8rem; font-size: 0.8rem; height: 32px; box-sizing: border-box; flex-grow: 1;">
+                                <button class="btn-primary" onclick="handleMapAddressSearch()" style="padding: 0 0.8rem; font-size: 0.8rem; height: 32px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;"><i data-lucide="search" style="width:14px;height:14px;"></i></button>
                             </div>
 
                             <!-- Automated Listing Finder Filters -->
-                            <div class="automated-finder-panel" style="margin-top: 1rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; gap: 0.75rem;">
-                                <div style="font-size: 0.75rem; font-weight: 700; color: var(--warning); display: flex; align-items: center; gap: 0.25rem;">
-                                    <i data-lucide="scan" style="width: 14px; height: 14px;"></i> Automated Listing Finder
+                            <div class="automated-finder-panel" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--warning); display: flex; align-items: center; gap: 0.25rem;">
+                                    <i data-lucide="scan" style="width: 12px; height: 12px;"></i> Automated Listing Finder
                                 </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
                                     <div class="form-group" style="margin:0;">
-                                        <label for="filter-distance" style="font-size:0.65rem; color:var(--text-muted); margin-bottom:0.25rem; display:block;">Max Distance</label>
-                                        <select id="filter-distance" style="background:rgba(0,0,0,0.2); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.35rem; font-size:0.75rem; width:100%; box-sizing:border-box;">
+                                        <label for="filter-distance" style="font-size:0.6rem; color:var(--text-muted); margin-bottom:0.15rem; display:block;">Max Distance</label>
+                                        <select id="filter-distance" style="background:rgba(0,0,0,0.2); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.25rem; font-size:0.7rem; width:100%; box-sizing:border-box; height: 28px;">
                                             <option value="1">Within 1 Mile</option>
                                             <option value="5" selected>Within 5 Miles</option>
                                             <option value="10">Within 10 Miles</option>
@@ -863,8 +860,8 @@
                                         </select>
                                     </div>
                                     <div class="form-group" style="margin:0;">
-                                        <label for="filter-stale-dom" style="font-size:0.65rem; color:var(--text-muted); margin-bottom:0.25rem; display:block;">Stale Duration (DOM)</label>
-                                        <select id="filter-stale-dom" style="background:rgba(0,0,0,0.2); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.35rem; font-size:0.75rem; width:100%; box-sizing:border-box;">
+                                        <label for="filter-stale-dom" style="font-size:0.6rem; color:var(--text-muted); margin-bottom:0.15rem; display:block;">Stale Duration (DOM)</label>
+                                        <select id="filter-stale-dom" style="background:rgba(0,0,0,0.2); color:white; border:1px solid var(--border-color); border-radius:4px; padding:0.25rem; font-size:0.7rem; width:100%; box-sizing:border-box; height: 28px;">
                                             <option value="all">All Days on Market</option>
                                             <option value="stale">Stale (DOM > 90 Days)</option>
                                             <option value="motivated">Motivated (DOM > 180 Days)</option>
@@ -872,8 +869,8 @@
                                         </select>
                                     </div>
                                 </div>
-                                <button class="btn-secondary btn-sm" onclick="autoScanForListings()" style="width: 100%; font-size: 0.75rem; padding: 0.4rem; color:white;">
-                                    <i data-lucide="refresh-cw"></i> Auto-Scan Neighborhood Radar
+                                <button class="btn-secondary btn-sm" onclick="autoScanForListings()" style="width: 100%; font-size: 0.7rem; padding: 0.3rem; color:white; height: 28px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Auto-Scan Neighborhood Radar
                                 </button>
                             </div>
                         </div>
