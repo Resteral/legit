@@ -896,6 +896,7 @@ function handleSignup(event) {
         isHomeownerProject: true,
         bidDeadline: bidDeadline,
         openHouse: openHouse,
+        timeline: timeline,
         renovationsNeeded: selectedScopes.length > 0 ? selectedScopes : ['paint', 'landscaping'],
         notes: notes || 'Looking for bids.',
         bids: [],
@@ -4102,6 +4103,10 @@ function renderPublicCatalog() {
                                 <span style="color:var(--text-muted);">Bidders Open House:</span>
                                 <strong style="color:var(--success);">${formattedOpenHouse}</strong>
                             </div>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--text-muted);">Project Timeline:</span>
+                                <strong style="color:var(--primary);">${item.timeline || 'Immediate (1-2 weeks)'}</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -6622,6 +6627,7 @@ function openAuthModal() {
     authActiveTab = 'signin';
     document.getElementById('auth-modal-title').innerText = "Sign In to Revitalize";
     document.getElementById('auth-register-only').style.display = 'none';
+    document.getElementById('auth-signin-only').style.display = 'flex';
     document.getElementById('auth-btn-submit').innerText = "Sign In";
     
     document.getElementById('auth-tab-signin').className = 'btn-primary';
@@ -6659,6 +6665,7 @@ function setAuthTab(tab) {
     if (tab === 'signin') {
         document.getElementById('auth-modal-title').innerText = "Sign In to Revitalize";
         document.getElementById('auth-register-only').style.display = 'none';
+        document.getElementById('auth-signin-only').style.display = 'flex';
         document.getElementById('auth-btn-submit').innerText = "Sign In";
         document.getElementById('auth-tab-signin').className = 'btn-primary';
         document.getElementById('auth-tab-register').className = 'btn-secondary';
@@ -6666,6 +6673,7 @@ function setAuthTab(tab) {
     } else {
         document.getElementById('auth-modal-title').innerText = "Register New Account";
         document.getElementById('auth-register-only').style.display = 'flex';
+        document.getElementById('auth-signin-only').style.display = 'none';
         document.getElementById('auth-btn-submit').innerText = "Create Account";
         document.getElementById('auth-tab-signin').className = 'btn-secondary';
         document.getElementById('auth-tab-signin').style.color = 'white';
@@ -6693,6 +6701,7 @@ async function handleAuthSubmit(event) {
     const bizId = document.getElementById('auth-biz-select').value || '';
 
     if (authActiveTab === 'signin') {
+        const signinRole = document.getElementById('auth-signin-role').value || 'homeowner';
         // Sandbox Local Fallback Auth checked FIRST for instant responsiveness!
         let accounts = [];
         try {
@@ -6702,9 +6711,17 @@ async function handleAuthSubmit(event) {
 
         let match = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
         if (match) {
-            // Update password if changed, to prevent locked accounts during staging/demo
+            // Update password or role to match sign-in selection immediately
+            let updated = false;
             if (match.password !== password) {
                 match.password = password;
+                updated = true;
+            }
+            if (match.role !== signinRole) {
+                match.role = signinRole;
+                updated = true;
+            }
+            if (updated) {
                 localStorage.setItem('revitalize_accounts', JSON.stringify(accounts));
             }
             currentUser = {
@@ -6714,7 +6731,7 @@ async function handleAuthSubmit(event) {
                 bizId: match.bizId
             };
             localStorage.setItem('revitalize_current_user', JSON.stringify(currentUser));
-            showToast(`Welcome back, ${currentUser.name}!`);
+            showToast(`Welcome back, ${currentUser.name}! Signed in as ${currentUser.role.toUpperCase()}.`);
             closeAuthModal();
             renderAuthHeaderStatus();
             if (currentView === 'utool') renderUtoolDashboard();
@@ -6727,12 +6744,12 @@ async function handleAuthSubmit(event) {
             }
             return;
         } else {
-            // Auto-register on the fly!
+            // Auto-register on the fly with selected sign-in role!
             const newAccount = {
                 email: email,
                 password: password,
                 name: email.split('@')[0],
-                role: 'homeowner',
+                role: signinRole,
                 bizId: ''
             };
             accounts.push(newAccount);
@@ -6746,7 +6763,7 @@ async function handleAuthSubmit(event) {
             };
             localStorage.setItem('revitalize_current_user', JSON.stringify(currentUser));
             
-            showToast(`Profile automatically created & logged in! Welcome.`);
+            showToast(`Profile automatically created & logged in as ${currentUser.role.toUpperCase()}!`);
             closeAuthModal();
             renderAuthHeaderStatus();
             if (currentView === 'utool') renderUtoolDashboard();
@@ -7526,6 +7543,7 @@ function handleContractorBidSubmit(event) {
     
     const projectId = document.getElementById('submit-bid-project-id').value;
     const contractorName = document.getElementById('bid-contractor-name').value.trim();
+    const contractorEmail = document.getElementById('bid-contractor-email').value.trim();
     const amount = parseFloat(document.getElementById('bid-amount').value);
     const message = document.getElementById('bid-message').value.trim();
     
@@ -7540,6 +7558,7 @@ function handleContractorBidSubmit(event) {
     const newBid = {
         id: `bid-${Date.now()}`,
         contractorName: contractorName,
+        contractorEmail: contractorEmail,
         amount: amount,
         message: message,
         timestamp: new Date().toLocaleDateString()
@@ -7555,6 +7574,7 @@ function handleContractorBidSubmit(event) {
         lead.bids.push({
             id: newBid.id,
             contractorName: contractorName,
+            contractorEmail: contractorEmail,
             amount: amount,
             message: message,
             status: 'pending',
