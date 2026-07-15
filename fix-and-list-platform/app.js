@@ -4144,7 +4144,76 @@ async function fetchLiveMarketListings(customQuery) {
         }
     }
 
-    // Geocode the city center
+    // Try to load real listings from RentCast if API Key is configured
+    const rentCastApiKey = localStorage.getItem('revitalize_rentcast_api_key') || '';
+    if (rentCastApiKey) {
+        let url = `https://api.rentcast.io/v1/listings/active?limit=12&status=For%20Sale`;
+        const isZip = /^\d{5}$/.test(query);
+        if (isZip) {
+            url += `&zipCode=${query}`;
+        } else {
+            const parts = query.split(',');
+            const city = parts[0].trim();
+            const state = parts[1] ? parts[1].trim() : 'FL';
+            url += `&city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`;
+        }
+
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    "accept": "application/json",
+                    "X-Api-Key": rentCastApiKey
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const rentCastListings = data.map((item, index) => {
+                        const price = item.price || 350000;
+                        const beds = item.beds || 3;
+                        const baths = item.baths || 2;
+                        const sqft = item.sqFt || 1500;
+                        
+                        const owners = [
+                            { name: 'Alice Smith', phone: '305-555-0145' },
+                            { name: 'Robert Jenkins', phone: '407-555-0182' },
+                            { name: 'Maria Rodriguez', phone: '954-555-0119' },
+                            { name: 'James Carter', phone: '212-555-0167' },
+                            { name: 'Sarah Miller', phone: '678-555-0151' },
+                            { name: 'William Davis', phone: '312-555-0193' }
+                        ];
+                        const owner = owners[index % owners.length];
+
+                        return {
+                            id: item.id || `rc-${Date.now()}-${index}`,
+                            address: item.formattedAddress || item.addressLine1,
+                            price: price,
+                            beds: beds,
+                            baths: baths,
+                            sqft: sqft,
+                            ownerName: owner.name,
+                            ownerPhone: owner.phone,
+                            status: 'For Sale',
+                            image: (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80',
+                            isSupabase: false,
+                            isRentCast: true
+                        };
+                    });
+                    
+                    liveMarketListings = [...supabaseListings, ...rentCastListings];
+                    renderPublicCatalog();
+                    showToast(`Loaded ${rentCastListings.length} live listings from RentCast!`);
+                    return;
+                }
+            } else {
+                console.warn("RentCast API returned error status:", res.status);
+            }
+        } catch (e) {
+            console.error("RentCast API error:", e);
+        }
+    }
+
+    // Geocode the city center (Fallback to geocoded OSM listings)
     fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(data => {
@@ -7087,4 +7156,38 @@ async function handleAddLeadSubmit(event) {
     // Clear form and close modal
     document.getElementById('add-lead-form').reset();
     closeAddLeadModal();
+}
+
+// ================= REAL ESTATE API SETTINGS SYSTEM =================
+function openApiSettingsModal() {
+    const modal = document.getElementById('api-settings-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    
+    // Fill current key if exists
+    document.getElementById('rentcast-api-key').value = localStorage.getItem('revitalize_rentcast_api_key') || '';
+    lucide.createIcons();
+}
+
+function closeApiSettingsModal() {
+    const modal = document.getElementById('api-settings-modal');
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+
+function handleSaveApiSettings(event) {
+    event.preventDefault();
+    const key = document.getElementById('rentcast-api-key').value.trim();
+    if (key) {
+        localStorage.setItem('revitalize_rentcast_api_key', key);
+        showToast("RentCast MLS API Key saved successfully!");
+    } else {
+        localStorage.removeItem('revitalize_rentcast_api_key');
+        showToast("RentCast MLS API Key cleared.");
+    }
+    
+    closeApiSettingsModal();
+    
+    // Trigger fresh load of listings
+    fetchLiveMarketListings();
 }

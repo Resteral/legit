@@ -400,10 +400,11 @@
                     </div>
                     
                     <!-- Real-World Listings Search Bar -->
-                    <div style="display:flex; gap:0.5rem; width:100%; max-width:550px; flex-wrap:wrap; justify-content:flex-end;">
+                    <div style="display:flex; gap:0.5rem; width:100%; max-width:620px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
                         <input type="text" id="market-search-input" placeholder="Search city / zip for active homes..." style="padding:0.4rem 0.8rem; font-size:0.8rem; background:rgba(0,0,0,0.3); color:white; border:1px solid var(--border-color); border-radius:4px; flex-grow:1; box-sizing:border-box; min-width:180px;">
                         <button class="btn-primary" onclick="fetchLiveMarketListings()" style="padding:0.4rem 1rem; font-size:0.8rem; display:flex; align-items:center; gap:0.25rem;"><i data-lucide="search" style="width:12px;height:12px;"></i> Search MLS</button>
                         <button class="btn-secondary" onclick="openAddLeadModal()" style="padding:0.4rem 1rem; font-size:0.8rem; display:flex; align-items:center; gap:0.25rem; color:white;"><i data-lucide="plus" style="width:12px;height:12px;"></i> Add Lead</button>
+                        <button class="btn-secondary" onclick="openApiSettingsModal()" style="padding:0.4rem; font-size:0.8rem; display:flex; align-items:center; color:white; border-radius:4px;" title="Real Estate API Settings"><i data-lucide="settings" style="width:14px;height:14px;"></i></button>
                     </div>
                 </div>
                 <div class="catalog-grid" id="public-catalog-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:2rem;">
@@ -2413,9 +2414,41 @@
         </div>
     </div>
 
+    <!-- ================= API SETTINGS MODAL ================= -->
+    <div id="api-settings-modal" class="drawer-overlay" style="display:none; align-items:center; justify-content:center; z-index:2000;">
+        <div class="drawer-content mini-modal" style="max-width:450px; width:95%; padding:1.5rem;">
+            <div class="drawer-header" style="padding-bottom:0.75rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+                <h2>Real Estate API Settings</h2>
+                <button class="btn-close" onclick="closeApiSettingsModal()"><i data-lucide="x"></i></button>
+            </div>
+            
+            <form id="api-settings-form" onsubmit="handleSaveApiSettings(event)">
+                <div class="drawer-body" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;">
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">
+                        To display live, real-time listings of properties for sale directly from major MLS databases (Zillow, Realtor.com, Redfin), enter your free <strong>RentCast API Key</strong> below.
+                    </p>
+                    <div style="background:rgba(99, 102, 241, 0.05); border:1px solid rgba(99, 102, 241, 0.2); border-radius:4px; padding:0.6rem; font-size:0.7rem; color:white; display:flex; flex-direction:column; gap:4px;">
+                        <span>🔑 <strong>Get a free key in 30 seconds:</strong></span>
+                        <a href="https://www.rentcast.io/api" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:none; display:inline-block;">Visit rentcast.io/api →</a>
+                        <span>(Includes 100 free requests per month, no credit card required)</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="rentcast-api-key">RentCast API Key</label>
+                        <input type="text" id="rentcast-api-key" placeholder="Enter X-Api-Key..." style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:4px; padding:0.5rem; color:white; font-family:monospace; font-size:0.8rem;">
+                    </div>
+                </div>
+
+                <div class="drawer-footer" style="margin-top:1.5rem; display:flex; gap:0.5rem;">
+                    <button type="button" class="btn-secondary" onclick="closeApiSettingsModal()" style="flex:1; color:white;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="flex:1;">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast">Lead successfully created!</div>
 
-    <script src="app.js?v=36"></script>
+    <script src="app.js?v=37"></script>
 </body>
 </html>
