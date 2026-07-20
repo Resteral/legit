@@ -348,6 +348,12 @@ function parseChatCommand(command, argument, senderUser) {
     writeMessage('TheBot', true, '', embed);
   }
   
+  const pl = players.find(x => x.username === senderUser);
+  if (pl && pl.warnings && pl.warnings.length >= 3 && ['j', 'join', 'lobby'].includes(command)) {
+    writeMessage('TheBot', true, `❌ **Error:** Cannot participate. You are currently suspended from matchmaking due to **${pl.warnings.length} warnings** for being late / no-show.`);
+    return;
+  }
+
   // JOIN
   else if (command === 'j' || command === 'join') {
     if (argument) {
@@ -822,6 +828,51 @@ function parseChatCommand(command, argument, senderUser) {
       renderProfilesTab();
       updateVoiceChannelsUI();
     }
+  }
+
+  // WARN
+  else if (command === 'warn') {
+    const parts = argument.trim().split(' ');
+    const targetName = parts[0];
+    const reason = parts.slice(1).join(' ').trim() || 'Late / No-show to custom lobby match.';
+
+    if (!targetName) return writeMessage('TheBot', true, "⚠️ Please specify a player username to warn (e.g. `-warn Resteral.TV Late for hockey game`).");
+
+    const p = players.find(pl => pl.username.toLowerCase() === targetName.toLowerCase());
+    if (!p) return writeMessage('TheBot', true, `❌ Player **${targetName}** not found.`);
+
+    p.warnings = p.warnings || [];
+    p.warnings.push({
+      id: 'WARN-' + Math.random().toString(36).substr(2, 5).toUpperCase(),
+      reason,
+      issuedAt: new Date().toISOString()
+    });
+
+    const wCount = p.warnings.length;
+    let replyMsg = `🚨 **${p.username}** has been warned by **${senderUser}** for: *${reason}*. (Warnings: ${wCount}/3)`;
+    if (wCount >= 3) {
+      replyMsg += `\n❌ **SUSPENDED:** Player has reached 3 warnings and is now suspended from matchmaking!`;
+      
+      Object.keys(appState.queues).forEach(g => {
+        appState.queues[g] = appState.queues[g].filter(u => u !== p.username);
+      });
+      updateLobbyQueueUI(game);
+    }
+    writeMessage('TheBot', true, replyMsg);
+    renderProfilesTab();
+  }
+
+  // CLEAR WARNS
+  else if (command === 'clearwarns') {
+    const targetName = argument.trim();
+    if (!targetName) return writeMessage('TheBot', true, "⚠️ Please specify a player username to clear warnings (e.g. `-clearwarns Resteral.TV`).");
+
+    const p = players.find(pl => pl.username.toLowerCase() === targetName.toLowerCase());
+    if (!p) return writeMessage('TheBot', true, `❌ Player **${targetName}** not found.`);
+
+    p.warnings = [];
+    writeMessage('TheBot', true, `✅ Clean slate! Warnings cleared for **${p.username}**. Suspension lifted.`);
+    renderProfilesTab();
   }
 }
 
@@ -1377,8 +1428,25 @@ function renderProfilesTab() {
 
   // Render profiles list of all players
   container.innerHTML = players.map(p => {
+    const wCount = p.warnings ? p.warnings.length : 0;
+    const wBadge = wCount >= 3 
+      ? `<span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; position: absolute; top: 8px; right: 8px;">⚠️ SUSPENDED (${wCount} Warns)</span>`
+      : wCount > 0
+        ? `<span style="font-size: 0.65rem; background: #eab308; color: black; padding: 2px 6px; border-radius: 4px; font-weight: bold; position: absolute; top: 8px; right: 8px;">⚠️ WARNED (${wCount}/3)</span>`
+        : '';
+        
+    let wReasonsHtml = '';
+    if (wCount > 0) {
+      wReasonsHtml = `
+        <div style="font-size: 0.7rem; color: #f87171; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 4px; margin-top: 4px;">
+          <strong>Warns:</strong> ${p.warnings.map(w => w.reason).join(', ')}
+        </div>
+      `;
+    }
+
     return `
       <div class="db-card" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; border: 1.5px solid ${p.color || '#7c3aed'}; background: var(--dc-bg-chat); border-radius: 6px; position: relative; box-shadow: 0 0 10px ${p.color || '#7c3aed'}22;">
+        ${wBadge}
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 1.5rem;">${p.avatar || '👤'}</span>
           <div>
@@ -1389,6 +1457,7 @@ function renderProfilesTab() {
         </div>
         <div style="font-style: italic; font-size: 0.8rem; color: var(--dc-text-muted); border-top: 1px solid var(--db-border); padding-top: 6px; min-height: 38px;">
           "${p.bio || 'Competitive Custom Lobbies player.'}"
+          ${wReasonsHtml}
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: white; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
           <span>🧜 Ark: <strong>${p.games.arkheron?.elo || 1000}</strong></span>

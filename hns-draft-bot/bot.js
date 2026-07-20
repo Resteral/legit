@@ -113,6 +113,11 @@ function registerPlayer(username) {
       playersDb[username].games[g].teammates = {};
     }
   });
+
+  if (!playersDb[username].warnings) {
+    playersDb[username].warnings = [];
+  }
+
   saveDb();
 }
 
@@ -190,6 +195,12 @@ client.on('messageCreate', async (message) => {
   }
 
   const game = channelGame;
+
+  // Enforce suspension if player has 3 or more warnings
+  const userWarns = playersDb[username]?.warnings || [];
+  if (userWarns.length >= 3 && ['j', 'join', 'lobby'].includes(command)) {
+    return message.reply(`❌ Cannot participate. You are currently suspended from matchmaking due to **${userWarns.length} warnings** for being late / no-show.`);
+  }
 
   // 2. JOIN
   if (command === 'j' || command === 'join') {
@@ -884,6 +895,9 @@ client.on('messageCreate', async (message) => {
 
     const p = playersDb[matchKey];
     
+    const wCount = p.warnings ? p.warnings.length : 0;
+    const wText = wCount >= 3 ? `❌ **SUSPENDED** (${wCount}/3 Warns)` : `🟢 Active (${wCount}/3 Warns)`;
+
     const embed = new EmbedBuilder()
       .setTitle(`${p.avatar || '👤'} Player Profile: ${p.username}`)
       .setDescription(`*${p.bio || 'Competitive Custom Lobbies player.'}*`)
@@ -891,11 +905,18 @@ client.on('messageCreate', async (message) => {
         { name: '🔗 Linked In-Game Account', value: `\`${p.ingameName || 'Not linked. Use -register'}\``, inline: true },
         { name: '📅 Joined Club', value: `\`${p.registeredAt || 'Today'}\``, inline: true },
         { name: '⚙️ Steam Hex ID', value: `\`${p.steamHex || 'Not set. Use -steamhex'}\``, inline: true },
+        { name: '🚨 Scrim Status', value: wText, inline: true },
         { name: '🧜 Arkheron Rating', value: `MMR: **${p.games.arkheron?.elo || 1000}** | W/L: **${p.games.arkheron?.wins}-${p.games.arkheron?.losses}**`, inline: false },
         { name: '🏒 Zealot Hockey Rating', value: `MMR: **${p.games.hockey?.elo || 1000}** | W/L: **${p.games.hockey?.wins}-${p.games.hockey?.losses}**`, inline: false },
         { name: '🛡️ Zealot Mod Rating', value: `MMR: **${p.games.zealot?.elo || 1000}** | W/L: **${p.games.zealot?.wins}-${p.games.zealot?.losses}**`, inline: false }
       )
       .setColor(p.color || '#7c3aed');
+
+    if (wCount > 0) {
+      const wList = p.warnings.map((w, idx) => `${idx+1}. *${w.reason}* (${new Date(w.issuedAt).toLocaleDateString()})`).join('\n');
+      embed.addFields({ name: '⚠️ Warning Infractions', value: wList, inline: false });
+    }
+
     message.channel.send({ embeds: [embed] });
   }
 
@@ -1282,7 +1303,57 @@ client.on('messageCreate', async (message) => {
 
     activeTournament.currentBidding.highestBid = amount;
     activeTournament.currentBidding.highestBidder = username;
-    message.channel.send(`📈 **${username}** bid **${amount}** credits on **${activeTournament.currentBidding.player}**!`);
+  }
+
+  // 31.5 WARN
+  else if (command === 'warn') {
+    const parts = argument.trim().split(' ');
+    const targetName = parts[0];
+    const reason = parts.slice(1).join(' ').trim() || 'Late / No-show to custom lobby match.';
+
+    if (!targetName) {
+      return message.reply("⚠️ Please specify a player username to warn (e.g. `-warn Resteral.TV Late for hockey game`).");
+    }
+
+    const matchKey = Object.keys(playersDb).find(k => k.toLowerCase() === targetName.toLowerCase());
+    if (!matchKey) {
+      return message.reply(`❌ Player **${targetName}** not found in database.`);
+    }
+
+    const p = playersDb[matchKey];
+    p.warnings = p.warnings || [];
+    p.warnings.push({
+      id: 'WARN-' + Math.random().toString(36).substr(2, 5).toUpperCase(),
+      reason,
+      issuedAt: new Date().toISOString()
+    });
+    saveDb();
+
+    const wCount = p.warnings.length;
+    let replyMsg = `🚨 **${p.username}** has been warned by **${username}** for: *${reason}*. (Warnings: ${wCount}/3)`;
+    if (wCount >= 3) {
+      replyMsg += `\n❌ **SUSPENDED:** Player has reached 3 warnings and is now suspended from matchmaking!`;
+    }
+    message.channel.send(replyMsg);
+  }
+
+  // 31.6 CLEAR WARNS
+  else if (command === 'clearwarns') {
+    const targetName = argument.trim();
+    if (!targetName) {
+      return message.reply("⚠️ Please specify a player username to clear warnings (e.g. `-clearwarns Resteral.TV`).");
+    }
+
+    const matchKey = Object.keys(playersDb).find(k => k.toLowerCase() === targetName.toLowerCase());
+    if (!matchKey) {
+      return message.reply(`❌ Player **${targetName}** not found in database.`);
+    }
+
+    const p = playersDb[matchKey];
+    p.warnings = [];
+    saveDb();
+
+    message.channel.send(`✅ Clean slate! Warnings cleared for **${p.username}**. Suspension lifted.`);
   }
 
   // 32. COMMUNITY POSTS
